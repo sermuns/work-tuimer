@@ -229,9 +229,10 @@ impl AppState {
     }
 
     pub fn set_current_time_on_field(&mut self) {
-        use time::OffsetDateTime;
+        use time::{OffsetDateTime, UtcOffset};
         
-        let now = OffsetDateTime::now_utc();
+        let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
+        let now = OffsetDateTime::now_utc().to_offset(local_offset);
         let current_time = format!("{:02}:{:02}", now.hour(), now.minute());
         
         let records = self.day_data.get_sorted_records();
