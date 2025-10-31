@@ -3,6 +3,7 @@ use crate::models::{DayData, WorkRecord};
 pub enum AppMode {
     Browse,
     Edit,
+    Visual,
 }
 
 pub enum EditField {
@@ -19,6 +20,8 @@ pub struct AppState {
     pub input_buffer: String,
     pub time_cursor: usize,
     pub should_quit: bool,
+    pub visual_start: usize,
+    pub visual_end: usize,
 }
 
 impl AppState {
@@ -31,6 +34,8 @@ impl AppState {
             input_buffer: String::new(),
             time_cursor: 0,
             should_quit: false,
+            visual_start: 0,
+            visual_end: 0,
         }
     }
 
@@ -43,12 +48,18 @@ impl AppState {
         if self.selected_index > 0 {
             self.selected_index -= 1;
         }
+        if matches!(self.mode, AppMode::Visual) {
+            self.visual_end = self.selected_index;
+        }
     }
 
     pub fn move_selection_down(&mut self) {
         let record_count = self.day_data.work_records.len();
         if self.selected_index < record_count.saturating_sub(1) {
             self.selected_index += 1;
+        }
+        if matches!(self.mode, AppMode::Visual) {
+            self.visual_end = self.selected_index;
         }
     }
 
@@ -257,5 +268,44 @@ impl AppState {
                 }
             }
         }
+    }
+
+    pub fn enter_visual_mode(&mut self) {
+        self.mode = AppMode::Visual;
+        self.visual_start = self.selected_index;
+        self.visual_end = self.selected_index;
+    }
+
+    pub fn exit_visual_mode(&mut self) {
+        self.mode = AppMode::Browse;
+    }
+
+    pub fn is_in_visual_selection(&self, index: usize) -> bool {
+        let start = self.visual_start.min(self.visual_end);
+        let end = self.visual_start.max(self.visual_end);
+        index >= start && index <= end
+    }
+
+    pub fn delete_visual_selection(&mut self) {
+        let records = self.day_data.get_sorted_records();
+        let start = self.visual_start.min(self.visual_end);
+        let end = self.visual_start.max(self.visual_end);
+        
+        let ids_to_delete: Vec<u32> = records
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| *i >= start && *i <= end)
+            .map(|(_, record)| record.id)
+            .collect();
+        
+        for id in ids_to_delete {
+            self.day_data.remove_record(id);
+        }
+        
+        if self.selected_index >= self.day_data.work_records.len() {
+            self.selected_index = self.day_data.work_records.len().saturating_sub(1);
+        }
+        
+        self.exit_visual_mode();
     }
 }

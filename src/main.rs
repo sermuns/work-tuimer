@@ -72,6 +72,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('n') => app.add_new_record(),
             KeyCode::Char('b') => app.add_break(),
             KeyCode::Char('d') => app.delete_selected_record(),
+            KeyCode::Char('v') => app.enter_visual_mode(),
             KeyCode::Char('T') => app.set_current_time_on_field(),
             KeyCode::Char('s') => {
                 let _ = storage.save(&app.day_data);
@@ -87,6 +88,13 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             }
             KeyCode::Backspace => app.handle_backspace(),
             KeyCode::Char(c) => app.handle_char_input(c),
+            _ => {}
+        },
+        ui::AppMode::Visual => match key.code {
+            KeyCode::Esc => app.exit_visual_mode(),
+            KeyCode::Up | KeyCode::Char('k') => app.move_selection_up(),
+            KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
+            KeyCode::Char('d') => app.delete_visual_selection(),
             _ => {}
         },
     }

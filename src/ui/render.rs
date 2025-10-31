@@ -53,8 +53,11 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
         .map(|(i, record)| {
             let is_selected = i == app.selected_index;
             let is_editing = matches!(app.mode, crate::ui::AppMode::Edit) && is_selected;
+            let is_in_visual = matches!(app.mode, crate::ui::AppMode::Visual) && app.is_in_visual_selection(i);
             
-            let style = if is_selected {
+            let style = if is_in_visual {
+                Style::default().bg(Color::Blue).fg(Color::White)
+            } else if is_selected {
                 Style::default().bg(Color::DarkGray).fg(Color::White)
             } else {
                 Style::default()
@@ -169,10 +172,13 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let help_text = match app.mode {
         crate::ui::AppMode::Browse => {
-            "↑/↓: Row | ←/→: Field | Enter: Edit | n: New | b: Break | d: Delete | T: Now | q: Quit"
+            "↑/↓: Row | ←/→: Field | Enter: Edit | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit"
         }
         crate::ui::AppMode::Edit => {
             "Tab: Next field | Enter: Save | Esc: Cancel"
+        }
+        crate::ui::AppMode::Visual => {
+            "↑/↓: Extend selection | d: Delete | Esc: Exit visual"
         }
     };
 
