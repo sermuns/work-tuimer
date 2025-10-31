@@ -76,6 +76,14 @@ impl AppState {
         }
     }
 
+    pub fn change_task_name(&mut self) {
+        if matches!(self.edit_field, EditField::Name) && self.get_selected_record().is_some() {
+            self.mode = AppMode::Edit;
+            self.input_buffer.clear();
+            self.time_cursor = 0;
+        }
+    }
+
     pub fn exit_edit_mode(&mut self) {
         self.mode = AppMode::Browse;
         self.input_buffer.clear();

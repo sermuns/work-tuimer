@@ -172,7 +172,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let help_text = match app.mode {
         crate::ui::AppMode::Browse => {
-            "↑/↓: Row | ←/→: Field | Enter: Edit | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit"
+            "↑/↓: Row | ←/→: Field | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit"
         }
         crate::ui::AppMode::Edit => {
             "Tab: Next field | Enter: Save | Esc: Cancel"
