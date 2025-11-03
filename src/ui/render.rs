@@ -2,7 +2,7 @@ use crate::ui::AppState;
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
-    widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table},
+    widgets::{Block, BorderType, Borders, Cell, Padding, Paragraph, Row, Table, TableState},
     Frame,
 };
 
@@ -74,6 +74,21 @@ fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
 
 fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
     let records = app.day_data.get_sorted_records();
+    
+    // Calculate how many rows can fit in the visible area
+    // Account for: borders (2) + header (2) + margin (1) = 5 lines
+    let available_height = area.height.saturating_sub(5) as usize;
+    
+    // Calculate scroll offset to keep selected item visible
+    let scroll_offset = if records.len() > available_height {
+        if app.selected_index >= available_height {
+            app.selected_index.saturating_sub(available_height - 1)
+        } else {
+            0
+        }
+    } else {
+        0
+    };
     
     let rows: Vec<Row> = records
         .iter()
@@ -214,8 +229,13 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             .title("📊 Work Records")
             .title_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
     );
+    
+    // Use stateful rendering to handle scrolling
+    let mut table_state = TableState::default()
+        .with_selected(Some(app.selected_index))
+        .with_offset(scroll_offset);
 
-    frame.render_widget(table, area);
+    frame.render_stateful_widget(table, area, &mut table_state);
 }
 
 fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
