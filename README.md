@@ -8,6 +8,7 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 - **Edit Mode**: Inline editing of task names and time fields
 - **Visual Mode**: Select and delete multiple records at once
 - **Smart Breaks**: Add break entries that calculate duration automatically
+- **Undo/Redo**: Recover from mistakes with unlimited undo (max 50 levels)
 - **Auto-save**: Automatically saves changes on quit
 - **Manual Save**: Press `s` to save anytime
 - **Persistent Storage**: JSON file per day in `~/.local/share/work-tuimer/` (or `./data/` fallback)
@@ -36,6 +37,8 @@ cargo run
 | `d` | Delete selected record |
 | `v` | Enter visual mode (multi-select) |
 | `T` | Set current time on selected field |
+| `u` | Undo last change |
+| `r` | Redo undone change |
 | `s` | Save to file |
 | `q` | Quit (auto-saves) |
 

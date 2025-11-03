@@ -1,4 +1,5 @@
 use crate::models::{DayData, WorkRecord};
+use super::history::History;
 
 pub enum AppMode {
     Browse,
@@ -23,6 +24,7 @@ pub struct AppState {
     pub should_quit: bool,
     pub visual_start: usize,
     pub visual_end: usize,
+    history: History,
 }
 
 impl AppState {
@@ -37,6 +39,7 @@ impl AppState {
             should_quit: false,
             visual_start: 0,
             visual_end: 0,
+            history: History::new(),
         }
     }
 
@@ -201,6 +204,7 @@ impl AppState {
     }
 
     pub fn save_edit(&mut self) -> Result<(), String> {
+        self.save_snapshot();
         self.save_current_field()?;
         self.exit_edit_mode();
         Ok(())
@@ -208,6 +212,8 @@ impl AppState {
 
     pub fn add_new_record(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
+        
+        self.save_snapshot();
         
         let id = self.day_data.next_id();
         
@@ -233,6 +239,8 @@ impl AppState {
     pub fn add_break(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
         
+        self.save_snapshot();
+        
         let id = self.day_data.next_id();
         
         let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
@@ -255,6 +263,8 @@ impl AppState {
     }
 
     pub fn delete_selected_record(&mut self) {
+        self.save_snapshot();
+        
         let records = self.day_data.get_sorted_records();
         if let Some(&record) = records.get(self.selected_index) {
             self.day_data.remove_record(record.id);
@@ -285,6 +295,8 @@ impl AppState {
 
     pub fn set_current_time_on_field(&mut self) {
         use time::{OffsetDateTime, UtcOffset};
+        
+        self.save_snapshot();
         
         let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
         let now = OffsetDateTime::now_utc().to_offset(local_offset);
@@ -331,6 +343,8 @@ impl AppState {
     }
 
     pub fn delete_visual_selection(&mut self) {
+        self.save_snapshot();
+        
         let records = self.day_data.get_sorted_records();
         let start = self.visual_start.min(self.visual_end);
         let end = self.visual_start.max(self.visual_end);
@@ -351,5 +365,37 @@ impl AppState {
         }
         
         self.exit_visual_mode();
+    }
+
+    fn save_snapshot(&mut self) {
+        self.history.push(self.day_data.clone());
+    }
+
+    pub fn undo(&mut self) {
+        if let Some(previous_state) = self.history.undo(self.day_data.clone()) {
+            self.day_data = previous_state;
+            
+            if self.selected_index >= self.day_data.work_records.len() {
+                self.selected_index = self.day_data.work_records.len().saturating_sub(1);
+            }
+        }
+    }
+
+    pub fn redo(&mut self) {
+        if let Some(next_state) = self.history.redo(self.day_data.clone()) {
+            self.day_data = next_state;
+            
+            if self.selected_index >= self.day_data.work_records.len() {
+                self.selected_index = self.day_data.work_records.len().saturating_sub(1);
+            }
+        }
+    }
+
+    pub fn can_undo(&self) -> bool {
+        self.history.can_undo()
+    }
+
+    pub fn can_redo(&self) -> bool {
+        self.history.can_redo()
     }
 }
