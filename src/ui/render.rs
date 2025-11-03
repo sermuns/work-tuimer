@@ -46,6 +46,11 @@ pub fn render(frame: &mut Frame, app: &AppState) {
     }
     
     render_footer(frame, chunks[2], app);
+    
+    // Render command palette overlay if active
+    if matches!(app.mode, crate::ui::AppMode::CommandPalette) {
+        render_command_palette(frame, app);
+    }
 }
 
 fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
@@ -369,7 +374,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
         crate::ui::AppMode::Browse => (
-            "↑/↓: Row | ←/→: Field | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit",
+            "↑/↓: Row | ←/→: Field | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | ?: Help | q: Quit",
             Color::Cyan,
             "BROWSE"
         ),
@@ -382,6 +387,11 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
             "↑/↓: Extend selection | d: Delete | Esc: Exit visual",
             Color::Magenta,
             "VISUAL"
+        ),
+        crate::ui::AppMode::CommandPalette => (
+            "↑/↓: Navigate | Enter: Execute | Esc: Cancel",
+            Color::LightGreen,
+            "COMMAND PALETTE"
         ),
     };
 
@@ -399,4 +409,121 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
         );
 
     frame.render_widget(footer, area);
+}
+
+fn render_command_palette(frame: &mut Frame, app: &AppState) {
+    use ratatui::widgets::Clear;
+    
+    // Create a centered modal
+    let area = frame.size();
+    let width = area.width.min(80);
+    let height = area.height.min(20);
+    let x = (area.width.saturating_sub(width)) / 2;
+    let y = (area.height.saturating_sub(height)) / 2;
+    
+    let modal_area = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+    
+    // Clear the background
+    frame.render_widget(Clear, modal_area);
+    
+    // Add a background block for the entire modal
+    let bg_block = Block::default()
+        .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+    frame.render_widget(bg_block, modal_area);
+    
+    // Split modal into input and results
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3),
+            Constraint::Min(5),
+        ])
+        .split(modal_area);
+    
+    // Render search input
+    let input_text = if app.command_palette_input.is_empty() {
+        "Type to search commands...".to_string()
+    } else {
+        app.command_palette_input.clone()
+    };
+    
+    let input_style = if app.command_palette_input.is_empty() {
+        Style::default().fg(Color::DarkGray).bg(Color::Rgb(30, 30, 45))
+    } else {
+        Style::default().fg(Color::White).bg(Color::Rgb(30, 30, 45))
+    };
+    
+    let input = Paragraph::new(input_text)
+        .style(input_style)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::LightGreen))
+                .title("🔍 Search Commands")
+                .title_style(Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD))
+                .style(Style::default().bg(Color::Rgb(30, 30, 45)))
+        );
+    
+    frame.render_widget(input, chunks[0]);
+    
+    // Render filtered commands
+    let filtered = app.get_filtered_commands();
+    
+    let rows: Vec<Row> = filtered
+        .iter()
+        .enumerate()
+        .map(|(i, (_, score, cmd))| {
+            let is_selected = i == app.command_palette_selected;
+            
+            let style = if is_selected {
+                Style::default()
+                    .bg(Color::Rgb(70, 130, 180))
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default()
+                    .bg(Color::Rgb(25, 25, 38))
+            };
+            
+            let key_display = format!("  {}  ", cmd.key);
+            let score_display = if *score > 0 {
+                format!(" ({})", score)
+            } else {
+                String::new()
+            };
+            
+            Row::new(vec![
+                Cell::from(key_display).style(Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)),
+                Cell::from(cmd.description).style(Style::default().fg(Color::White)),
+                Cell::from(score_display).style(Style::default().fg(Color::DarkGray)),
+            ])
+            .style(style)
+        })
+        .collect();
+    
+    let results_table = Table::new(
+        rows,
+        [
+            Constraint::Length(15),
+            Constraint::Min(30),
+            Constraint::Length(10),
+        ],
+    )
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::LightGreen))
+            .title(format!("📋 Commands ({} found)", filtered.len()))
+            .title_style(Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD))
+            .style(Style::default().bg(Color::Rgb(25, 25, 38)))
+    );
+    
+    frame.render_widget(results_table, chunks[1]);
 }

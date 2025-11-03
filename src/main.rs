@@ -64,6 +64,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
     match app.mode {
         ui::AppMode::Browse => match key.code {
             KeyCode::Char('q') => app.should_quit = true,
+            KeyCode::Char('?') => app.open_command_palette(),
             KeyCode::Up | KeyCode::Char('k') => app.move_selection_up(),
             KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
             KeyCode::Left | KeyCode::Char('h') => app.move_field_left(),
@@ -99,5 +100,47 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('d') => app.delete_visual_selection(),
             _ => {}
         },
+        ui::AppMode::CommandPalette => {
+            match key.code {
+                KeyCode::Esc => app.close_command_palette(),
+                KeyCode::Up => app.move_command_palette_up(),
+                KeyCode::Down => {
+                    let filtered_count = app.get_filtered_commands().len();
+                    app.move_command_palette_down(filtered_count);
+                }
+                KeyCode::Enter => {
+                    if let Some(action) = app.execute_selected_command() {
+                        execute_command_action(app, action, storage);
+                    }
+                }
+                KeyCode::Backspace => app.handle_command_palette_backspace(),
+                KeyCode::Char(c) => app.handle_command_palette_char(c),
+                _ => {}
+            }
+        }
+    }
+}
+
+fn execute_command_action(app: &mut AppState, action: ui::app_state::CommandAction, storage: &storage::Storage) {
+    use ui::app_state::CommandAction;
+    
+    match action {
+        CommandAction::MoveUp => app.move_selection_up(),
+        CommandAction::MoveDown => app.move_selection_down(),
+        CommandAction::MoveLeft => app.move_field_left(),
+        CommandAction::MoveRight => app.move_field_right(),
+        CommandAction::Edit => app.enter_edit_mode(),
+        CommandAction::Change => app.change_task_name(),
+        CommandAction::New => app.add_new_record(),
+        CommandAction::Break => app.add_break(),
+        CommandAction::Delete => app.delete_selected_record(),
+        CommandAction::Visual => app.enter_visual_mode(),
+        CommandAction::SetNow => app.set_current_time_on_field(),
+        CommandAction::Undo => app.undo(),
+        CommandAction::Redo => app.redo(),
+        CommandAction::Save => {
+            let _ = storage.save(&app.day_data);
+        }
+        CommandAction::Quit => app.should_quit = true,
     }
 }

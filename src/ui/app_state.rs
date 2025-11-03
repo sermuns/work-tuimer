@@ -5,6 +5,7 @@ pub enum AppMode {
     Browse,
     Edit,
     Visual,
+    CommandPalette,
 }
 
 pub enum EditField {
@@ -12,6 +13,30 @@ pub enum EditField {
     Start,
     End,
     Description,
+}
+
+pub struct Command {
+    pub key: &'static str,
+    pub description: &'static str,
+    pub action: CommandAction,
+}
+
+pub enum CommandAction {
+    MoveUp,
+    MoveDown,
+    MoveLeft,
+    MoveRight,
+    Edit,
+    Change,
+    New,
+    Break,
+    Delete,
+    Visual,
+    SetNow,
+    Undo,
+    Redo,
+    Save,
+    Quit,
 }
 
 pub struct AppState {
@@ -24,11 +49,92 @@ pub struct AppState {
     pub should_quit: bool,
     pub visual_start: usize,
     pub visual_end: usize,
+    pub command_palette_input: String,
+    pub command_palette_selected: usize,
+    pub available_commands: Vec<Command>,
     history: History,
 }
 
 impl AppState {
     pub fn new(day_data: DayData) -> Self {
+        let available_commands = vec![
+            Command {
+                key: "↑/k",
+                description: "Move selection up",
+                action: CommandAction::MoveUp,
+            },
+            Command {
+                key: "↓/j",
+                description: "Move selection down",
+                action: CommandAction::MoveDown,
+            },
+            Command {
+                key: "←/h",
+                description: "Move field left",
+                action: CommandAction::MoveLeft,
+            },
+            Command {
+                key: "→/l",
+                description: "Move field right",
+                action: CommandAction::MoveRight,
+            },
+            Command {
+                key: "Enter/i",
+                description: "Enter edit mode",
+                action: CommandAction::Edit,
+            },
+            Command {
+                key: "c",
+                description: "Change task name",
+                action: CommandAction::Change,
+            },
+            Command {
+                key: "n",
+                description: "Add new task",
+                action: CommandAction::New,
+            },
+            Command {
+                key: "b",
+                description: "Add break",
+                action: CommandAction::Break,
+            },
+            Command {
+                key: "d",
+                description: "Delete selected record",
+                action: CommandAction::Delete,
+            },
+            Command {
+                key: "v",
+                description: "Enter visual mode",
+                action: CommandAction::Visual,
+            },
+            Command {
+                key: "t",
+                description: "Set current time on field",
+                action: CommandAction::SetNow,
+            },
+            Command {
+                key: "u",
+                description: "Undo last change",
+                action: CommandAction::Undo,
+            },
+            Command {
+                key: "r",
+                description: "Redo last change",
+                action: CommandAction::Redo,
+            },
+            Command {
+                key: "s",
+                description: "Save to file",
+                action: CommandAction::Save,
+            },
+            Command {
+                key: "q",
+                description: "Quit application",
+                action: CommandAction::Quit,
+            },
+        ];
+        
         AppState {
             day_data,
             mode: AppMode::Browse,
@@ -39,6 +145,9 @@ impl AppState {
             should_quit: false,
             visual_start: 0,
             visual_end: 0,
+            command_palette_input: String::new(),
+            command_palette_selected: 0,
+            available_commands,
             history: History::new(),
         }
     }
@@ -397,5 +506,95 @@ impl AppState {
 
     pub fn can_redo(&self) -> bool {
         self.history.can_redo()
+    }
+
+    pub fn open_command_palette(&mut self) {
+        self.mode = AppMode::CommandPalette;
+        self.command_palette_input.clear();
+        self.command_palette_selected = 0;
+    }
+
+    pub fn close_command_palette(&mut self) {
+        self.mode = AppMode::Browse;
+        self.command_palette_input.clear();
+        self.command_palette_selected = 0;
+    }
+
+    pub fn handle_command_palette_char(&mut self, c: char) {
+        self.command_palette_input.push(c);
+        self.command_palette_selected = 0;
+    }
+
+    pub fn handle_command_palette_backspace(&mut self) {
+        self.command_palette_input.pop();
+        self.command_palette_selected = 0;
+    }
+
+    pub fn move_command_palette_up(&mut self) {
+        if self.command_palette_selected > 0 {
+            self.command_palette_selected -= 1;
+        }
+    }
+
+    pub fn move_command_palette_down(&mut self, filtered_count: usize) {
+        if self.command_palette_selected < filtered_count.saturating_sub(1) {
+            self.command_palette_selected += 1;
+        }
+    }
+
+    pub fn get_filtered_commands(&self) -> Vec<(usize, i64, &Command)> {
+        use fuzzy_matcher::FuzzyMatcher;
+        use fuzzy_matcher::skim::SkimMatcherV2;
+        
+        let matcher = SkimMatcherV2::default();
+        let query = self.command_palette_input.as_str();
+        
+        if query.is_empty() {
+            return self.available_commands
+                .iter()
+                .enumerate()
+                .map(|(i, cmd)| (i, 0, cmd))
+                .collect();
+        }
+        
+        let mut results: Vec<(usize, i64, &Command)> = self.available_commands
+            .iter()
+            .enumerate()
+            .filter_map(|(i, cmd)| {
+                let search_text = format!("{} {}", cmd.key, cmd.description);
+                matcher.fuzzy_match(&search_text, query)
+                    .map(|score| (i, score, cmd))
+            })
+            .collect();
+        
+        results.sort_by(|a, b| b.1.cmp(&a.1));
+        results
+    }
+
+    pub fn execute_selected_command(&mut self) -> Option<CommandAction> {
+        let filtered = self.get_filtered_commands();
+        if let Some((_, _, cmd)) = filtered.get(self.command_palette_selected) {
+            let action = match cmd.action {
+                CommandAction::MoveUp => CommandAction::MoveUp,
+                CommandAction::MoveDown => CommandAction::MoveDown,
+                CommandAction::MoveLeft => CommandAction::MoveLeft,
+                CommandAction::MoveRight => CommandAction::MoveRight,
+                CommandAction::Edit => CommandAction::Edit,
+                CommandAction::Change => CommandAction::Change,
+                CommandAction::New => CommandAction::New,
+                CommandAction::Break => CommandAction::Break,
+                CommandAction::Delete => CommandAction::Delete,
+                CommandAction::Visual => CommandAction::Visual,
+                CommandAction::SetNow => CommandAction::SetNow,
+                CommandAction::Undo => CommandAction::Undo,
+                CommandAction::Redo => CommandAction::Redo,
+                CommandAction::Save => CommandAction::Save,
+                CommandAction::Quit => CommandAction::Quit,
+            };
+            self.close_command_palette();
+            Some(action)
+        } else {
+            None
+        }
     }
 }
