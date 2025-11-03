@@ -21,10 +21,10 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 - [ ] Add task count and average duration metrics
 
 #### Day Navigation
-- [ ] Add `[` and `]` shortcuts for previous/next day navigation
-- [ ] Implement date change and data reload logic
+- [x] Add `[` and `]` shortcuts for previous/next day navigation
+- [x] Implement date change and data reload logic
+- [x] Show current date in UI header with navigation hints
 - [ ] Add "go to today" shortcut (e.g., `g` + `t`)
-- [ ] Show current date in UI header
 
 #### Status Bar
 - [ ] Design status bar layout (mode, help text, save status)
@@ -126,6 +126,16 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 ---
 
 ## Completed Tasks
+
+### Day Navigation Feature (2025-11-03)
+- [x] Add `current_date` field to AppState to track viewed date
+- [x] Implement `navigate_to_previous_day()` and `navigate_to_next_day()` methods
+- [x] Add automatic save/load when switching days
+- [x] Wire up `[` and `]` keyboard shortcuts for day navigation
+- [x] Update header to show current date with navigation hints
+- [x] Add day navigation shortcuts to footer help text
+- [x] Clear undo/redo history when switching days
+- **Notes**: Auto-saves current day data before loading new day. Undo/redo stacks are reset per day.
 
 ### Undo/Redo Feature (2025-11-03)
 - [x] Create history module for undo/redo state management

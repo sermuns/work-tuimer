@@ -5,11 +5,12 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 ## Features
 
 - **Browse Mode**: View all work entries with Vi-style navigation
+- **Day Navigation**: Navigate between days with `[` (previous) and `]` (next)
 - **Edit Mode**: Inline editing of task names and time fields
 - **Visual Mode**: Select and delete multiple records at once
 - **Smart Breaks**: Add break entries that calculate duration automatically
 - **Undo/Redo**: Recover from mistakes with unlimited undo (max 50 levels)
-- **Auto-save**: Automatically saves changes on quit
+- **Auto-save**: Automatically saves changes on quit and when switching days
 - **Manual Save**: Press `s` to save anytime
 - **Persistent Storage**: JSON file per day in `~/.local/share/work-tuimer/` (or `./data/` fallback)
 
@@ -30,6 +31,8 @@ cargo run
 | `↓/j` | Move selection down |
 | `←/h` | Move field left (Name → Start → End) |
 | `→/l` | Move field right (Name → Start → End) |
+| `[` | Navigate to previous day (auto-saves) |
+| `]` | Navigate to next day (auto-saves) |
 | `Enter/i` | Enter edit mode on selected field |
 | `c` | Change task name (quick edit) |
 | `n` | Add new work record |

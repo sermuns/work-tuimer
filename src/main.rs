@@ -52,6 +52,13 @@ fn run_app<B: ratatui::backend::Backend>(
             break;
         }
 
+        if app.date_changed {
+            storage.save(&app.day_data)?;
+            let new_day_data = storage.load(&app.current_date)?;
+            app.load_new_day_data(new_day_data);
+            continue; // Force redraw with new data before waiting for next event
+        }
+
         if let Event::Key(key) = event::read()? {
             handle_key_event(app, key, storage);
         }
@@ -81,6 +88,8 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('s') => {
                 let _ = storage.save(&app.day_data);
             }
+            KeyCode::Char('[') => app.navigate_to_previous_day(),
+            KeyCode::Char(']') => app.navigate_to_next_day(),
             _ => {}
         },
         ui::AppMode::Edit => match key.code {

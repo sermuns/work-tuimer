@@ -54,7 +54,7 @@ pub fn render(frame: &mut Frame, app: &AppState) {
 }
 
 fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
-    let date_str = format!("{}", app.day_data.date);
+    let date_str = format!("{}", app.current_date);
     
     let total_minutes: u32 = app.day_data.work_records.values()
         .map(|r| r.total_minutes)
@@ -68,7 +68,7 @@ fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
         .constraints([Constraint::Percentage(50), Constraint::Percentage(50)])
         .split(area);
     
-    let title_text = format!("⏱  WorkTimer - {}", date_str);
+    let title_text = format!("⏱  WorkTimer - {} [←prev] [next→]", date_str);
     let title = Paragraph::new(title_text)
         .style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
         .alignment(Alignment::Left)
@@ -374,7 +374,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
         crate::ui::AppMode::Browse => (
-            "↑/↓: Row | ←/→: Field | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | ?: Help | q: Quit",
+            "↑/↓: Row | ←/→: Field | [/]: Day | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | ?: Help | q: Quit",
             Color::Cyan,
             "BROWSE"
         ),

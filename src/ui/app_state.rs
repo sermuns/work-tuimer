@@ -1,5 +1,6 @@
 use crate::models::{DayData, WorkRecord};
 use super::history::History;
+use time::Date;
 
 pub enum AppMode {
     Browse,
@@ -41,6 +42,7 @@ pub enum CommandAction {
 
 pub struct AppState {
     pub day_data: DayData,
+    pub current_date: Date,
     pub mode: AppMode,
     pub selected_index: usize,
     pub edit_field: EditField,
@@ -52,11 +54,13 @@ pub struct AppState {
     pub command_palette_input: String,
     pub command_palette_selected: usize,
     pub available_commands: Vec<Command>,
+    pub date_changed: bool,
     history: History,
 }
 
 impl AppState {
     pub fn new(day_data: DayData) -> Self {
+        let current_date = day_data.date;
         let available_commands = vec![
             Command {
                 key: "↑/k",
@@ -137,6 +141,7 @@ impl AppState {
         
         AppState {
             day_data,
+            current_date,
             mode: AppMode::Browse,
             selected_index: 0,
             edit_field: EditField::Name,
@@ -148,6 +153,7 @@ impl AppState {
             command_palette_input: String::new(),
             command_palette_selected: 0,
             available_commands,
+            date_changed: false,
             history: History::new(),
         }
     }
@@ -596,5 +602,26 @@ impl AppState {
         } else {
             None
         }
+    }
+
+    pub fn navigate_to_previous_day(&mut self) {
+        use time::Duration;
+        
+        self.current_date = self.current_date.saturating_sub(Duration::days(1));
+        self.date_changed = true;
+    }
+
+    pub fn navigate_to_next_day(&mut self) {
+        use time::Duration;
+        
+        self.current_date = self.current_date.saturating_add(Duration::days(1));
+        self.date_changed = true;
+    }
+
+    pub fn load_new_day_data(&mut self, new_day_data: DayData) {
+        self.day_data = new_day_data;
+        self.selected_index = 0;
+        self.history = History::new();
+        self.date_changed = false;
     }
 }
