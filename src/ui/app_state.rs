@@ -6,15 +6,22 @@ pub enum AppMode {
     Visual,
 }
 
+pub enum FocusSection {
+    WorkRecords,
+    Notes,
+}
+
 pub enum EditField {
     Name,
     Start,
     End,
+    Notes,
 }
 
 pub struct AppState {
     pub day_data: DayData,
     pub mode: AppMode,
+    pub focus_section: FocusSection,
     pub selected_index: usize,
     pub edit_field: EditField,
     pub input_buffer: String,
@@ -29,6 +36,7 @@ impl AppState {
         AppState {
             day_data,
             mode: AppMode::Browse,
+            focus_section: FocusSection::WorkRecords,
             selected_index: 0,
             edit_field: EditField::Name,
             input_buffer: String::new(),
@@ -69,6 +77,7 @@ impl AppState {
                 EditField::Name => record.name.clone(),
                 EditField::Start => record.start.to_string(),
                 EditField::End => record.end.to_string(),
+                EditField::Notes => return, // Don't enter edit mode for notes from this method
             };
             self.mode = AppMode::Edit;
             self.input_buffer = input_value;
@@ -85,6 +94,12 @@ impl AppState {
     }
 
     pub fn exit_edit_mode(&mut self) {
+        // If we're in notes mode, save notes and return to work records
+        if matches!(self.edit_field, EditField::Notes) {
+            self.day_data.notes = self.input_buffer.clone();
+            self.focus_section = FocusSection::WorkRecords;
+        }
+        
         self.mode = AppMode::Browse;
         self.input_buffer.clear();
         self.edit_field = EditField::Name;
@@ -109,13 +124,14 @@ impl AppState {
                     self.time_cursor = 0;
                     EditField::Name
                 }
+                EditField::Notes => EditField::Notes, // Stay in notes field
             };
         }
     }
 
     pub fn handle_char_input(&mut self, c: char) {
         match self.edit_field {
-            EditField::Name => {
+            EditField::Name | EditField::Notes => {
                 self.input_buffer.push(c);
             }
             EditField::Start | EditField::End => {
@@ -150,7 +166,7 @@ impl AppState {
 
     pub fn handle_backspace(&mut self) {
         match self.edit_field {
-            EditField::Name => {
+            EditField::Name | EditField::Notes => {
                 self.input_buffer.pop();
             }
             EditField::Start | EditField::End => {
@@ -162,32 +178,41 @@ impl AppState {
     }
 
     fn save_current_field(&mut self) -> Result<(), String> {
-        let records = self.day_data.get_sorted_records();
-        if let Some(&record) = records.get(self.selected_index) {
-            let id = record.id;
-            
-            if let Some(record_mut) = self.day_data.work_records.get_mut(&id) {
-                match self.edit_field {
-                    EditField::Name => {
-                        if self.input_buffer.trim().is_empty() {
-                            return Err("Name cannot be empty".to_string());
+        match self.edit_field {
+            EditField::Notes => {
+                self.day_data.notes = self.input_buffer.clone();
+                Ok(())
+            }
+            _ => {
+                let records = self.day_data.get_sorted_records();
+                if let Some(&record) = records.get(self.selected_index) {
+                    let id = record.id;
+                    
+                    if let Some(record_mut) = self.day_data.work_records.get_mut(&id) {
+                        match self.edit_field {
+                            EditField::Name => {
+                                if self.input_buffer.trim().is_empty() {
+                                    return Err("Name cannot be empty".to_string());
+                                }
+                                record_mut.name = self.input_buffer.trim().to_string();
+                            }
+                            EditField::Start => {
+                                record_mut.start = self.input_buffer.parse()
+                                    .map_err(|_| "Invalid start time format (use HH:MM)".to_string())?;
+                                record_mut.update_duration();
+                            }
+                            EditField::End => {
+                                record_mut.end = self.input_buffer.parse()
+                                    .map_err(|_| "Invalid end time format (use HH:MM)".to_string())?;
+                                record_mut.update_duration();
+                            }
+                            EditField::Notes => unreachable!(),
                         }
-                        record_mut.name = self.input_buffer.trim().to_string();
-                    }
-                    EditField::Start => {
-                        record_mut.start = self.input_buffer.parse()
-                            .map_err(|_| "Invalid start time format (use HH:MM)".to_string())?;
-                        record_mut.update_duration();
-                    }
-                    EditField::End => {
-                        record_mut.end = self.input_buffer.parse()
-                            .map_err(|_| "Invalid end time format (use HH:MM)".to_string())?;
-                        record_mut.update_duration();
                     }
                 }
+                Ok(())
             }
         }
-        Ok(())
     }
 
     pub fn save_edit(&mut self) -> Result<(), String> {
@@ -260,6 +285,7 @@ impl AppState {
             EditField::Name => EditField::End,
             EditField::Start => EditField::Name,
             EditField::End => EditField::Start,
+            EditField::Notes => EditField::Notes, // Notes field doesn't cycle
         };
     }
 
@@ -268,6 +294,7 @@ impl AppState {
             EditField::Name => EditField::Start,
             EditField::Start => EditField::End,
             EditField::End => EditField::Name,
+            EditField::Notes => EditField::Notes, // Notes field doesn't cycle
         };
     }
 
@@ -298,6 +325,26 @@ impl AppState {
                     }
                     _ => {}
                 }
+            }
+        }
+    }
+
+    pub fn toggle_focus_section(&mut self) {
+        match self.focus_section {
+            FocusSection::WorkRecords => {
+                self.focus_section = FocusSection::Notes;
+                // When entering notes, start edit mode
+                self.mode = AppMode::Edit;
+                self.edit_field = EditField::Notes;
+                self.input_buffer = self.day_data.notes.clone();
+            }
+            FocusSection::Notes => {
+                self.focus_section = FocusSection::WorkRecords;
+                // When leaving notes, save and exit edit mode
+                self.day_data.notes = self.input_buffer.clone();
+                self.mode = AppMode::Browse;
+                self.edit_field = EditField::Name;
+                self.input_buffer.clear();
             }
         }
     }

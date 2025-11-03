@@ -8,6 +8,8 @@ pub struct DayData {
     pub date: Date,
     pub last_id: u32,
     pub work_records: HashMap<u32, WorkRecord>,
+    #[serde(default)]
+    pub notes: String,
 }
 
 impl DayData {
@@ -16,6 +18,7 @@ impl DayData {
             date,
             last_id: 0,
             work_records: HashMap::new(),
+            notes: String::new(),
         }
     }
 

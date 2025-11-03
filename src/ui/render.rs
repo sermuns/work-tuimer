@@ -16,8 +16,8 @@ pub fn render(frame: &mut Frame, app: &AppState) {
         ])
         .split(frame.size());
 
-    // Split the middle section horizontally for records and summary on wide screens,
-    // vertically on narrow screens
+    // Split the middle section: records+notes on left, summary on right (wide screens)
+    // or all stacked vertically on narrow screens
     let is_wide = frame.size().width >= 100;
     let middle_chunks = if is_wide {
         Layout::default()
@@ -32,14 +32,34 @@ pub fn render(frame: &mut Frame, app: &AppState) {
             .direction(Direction::Vertical)
             .constraints([
                 Constraint::Min(10),
+                Constraint::Length(10),
                 Constraint::Length(15),
             ])
             .split(chunks[1])
     };
 
     render_header(frame, chunks[0], app);
-    render_records(frame, middle_chunks[0], app);
-    render_grouped_totals(frame, middle_chunks[1], app);
+    
+    if is_wide {
+        // On wide screens: records+notes stacked on left, summary on right
+        let left_chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Min(10),
+                Constraint::Length(10),
+            ])
+            .split(middle_chunks[0]);
+        
+        render_records(frame, left_chunks[0], app);
+        render_notes(frame, left_chunks[1], app);
+        render_grouped_totals(frame, middle_chunks[1], app);
+    } else {
+        // On narrow screens: records, notes, summary all stacked vertically
+        render_records(frame, middle_chunks[0], app);
+        render_notes(frame, middle_chunks[1], app);
+        render_grouped_totals(frame, middle_chunks[2], app);
+    }
+    
     render_footer(frame, chunks[2], app);
 }
 
@@ -145,6 +165,10 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                         record.start.to_string(),
                         record.end.to_string(),
                     ),
+                    crate::ui::EditField::Notes => {
+                        // Notes editing doesn't affect the records display
+                        (format!("{} {}", icon, record.name), record.start.to_string(), record.end.to_string())
+                    }
                     crate::ui::EditField::Start | crate::ui::EditField::End => {
                         let time_str = &app.input_buffer;
                         let positions = [0, 1, 3, 4];
@@ -196,6 +220,11 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                         format!("{} {}", icon, record.name),
                         record.start.to_string(),
                         format!("<{}>", record.end),
+                    ),
+                    crate::ui::EditField::Notes => (
+                        format!("{} {}", icon, record.name),
+                        record.start.to_string(),
+                        record.end.to_string(),
                     ),
                 }
             } else {
@@ -323,18 +352,84 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
     frame.render_widget(table, area);
 }
 
+fn render_notes(frame: &mut Frame, area: Rect, app: &AppState) {
+    let is_editing_notes = matches!(app.focus_section, crate::ui::FocusSection::Notes);
+    
+    let display_text = if is_editing_notes {
+        &app.input_buffer
+    } else if app.day_data.notes.is_empty() {
+        "No notes (press Tab to add notes)"
+    } else {
+        &app.day_data.notes
+    };
+    
+    let style = if is_editing_notes {
+        Style::default().fg(Color::Yellow)
+    } else if app.day_data.notes.is_empty() {
+        Style::default().fg(Color::DarkGray)
+    } else {
+        Style::default().fg(Color::White)
+    };
+    
+    let border_style = if is_editing_notes {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::Blue)
+    };
+    
+    let title = if is_editing_notes {
+        "📝 Notes [EDITING]"
+    } else {
+        "📝 Notes"
+    };
+    
+    let notes = Paragraph::new(display_text)
+        .style(style)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(border_style)
+                .title(title)
+                .title_style(Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD))
+                .padding(Padding::uniform(1))
+        )
+        .wrap(ratatui::widgets::Wrap { trim: false });
+    
+    frame.render_widget(notes, area);
+}
+
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
-        crate::ui::AppMode::Browse => (
-            "↑/↓: Row | ←/→: Field | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit",
-            Color::Cyan,
-            "BROWSE"
-        ),
-        crate::ui::AppMode::Edit => (
-            "Tab: Next field | Enter: Save | Esc: Cancel",
-            Color::Yellow,
-            "EDIT"
-        ),
+        crate::ui::AppMode::Browse => {
+            match app.focus_section {
+                crate::ui::FocusSection::WorkRecords => (
+                    "↑/↓: Row | ←/→: Field | Tab: Notes | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | q: Quit",
+                    Color::Cyan,
+                    "BROWSE - WORK RECORDS"
+                ),
+                crate::ui::FocusSection::Notes => (
+                    "Tab: Back to Work Records | Enter: Newline | Esc: Exit",
+                    Color::Blue,
+                    "EDIT - NOTES"
+                ),
+            }
+        }
+        crate::ui::AppMode::Edit => {
+            if matches!(app.edit_field, crate::ui::EditField::Notes) {
+                (
+                    "Tab: Back to Work Records | Enter: Newline | Esc: Exit",
+                    Color::Blue,
+                    "EDIT - NOTES"
+                )
+            } else {
+                (
+                    "Tab: Next field | Enter: Save | Esc: Cancel",
+                    Color::Yellow,
+                    "EDIT - WORK RECORD"
+                )
+            }
+        },
         crate::ui::AppMode::Visual => (
             "↑/↓: Extend selection | d: Delete | Esc: Exit visual",
             Color::Magenta,
