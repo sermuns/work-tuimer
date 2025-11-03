@@ -200,24 +200,48 @@ impl AppState {
         use crate::models::{TimePoint, WorkRecord};
         
         let id = self.day_data.next_id();
-        let default_start = TimePoint::new(9, 0).unwrap();
-        let default_end = TimePoint::new(17, 0).unwrap();
+        
+        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
+            let start_minutes = current_record.end.to_minutes_since_midnight();
+            let end_minutes = (start_minutes + 60).min(24 * 60 - 1);
+            (
+                current_record.end,
+                TimePoint::from_minutes_since_midnight(end_minutes).unwrap()
+            )
+        } else {
+            (TimePoint::new(9, 0).unwrap(), TimePoint::new(17, 0).unwrap())
+        };
+        
         let record = WorkRecord::new(id, "New Task".to_string(), default_start, default_end);
         
         self.day_data.add_record(record);
-        self.selected_index = self.day_data.work_records.len().saturating_sub(1);
+        
+        let records = self.day_data.get_sorted_records();
+        self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
     }
 
     pub fn add_break(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
         
         let id = self.day_data.next_id();
-        let default_start = TimePoint::new(12, 0).unwrap();
-        let default_end = TimePoint::new(12, 15).unwrap();
+        
+        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
+            let start_minutes = current_record.end.to_minutes_since_midnight();
+            let end_minutes = (start_minutes + 15).min(24 * 60 - 1);
+            (
+                current_record.end,
+                TimePoint::from_minutes_since_midnight(end_minutes).unwrap()
+            )
+        } else {
+            (TimePoint::new(12, 0).unwrap(), TimePoint::new(12, 15).unwrap())
+        };
+        
         let record = WorkRecord::new(id, "Break".to_string(), default_start, default_end);
         
         self.day_data.add_record(record);
-        self.selected_index = self.day_data.work_records.len().saturating_sub(1);
+        
+        let records = self.day_data.get_sorted_records();
+        self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
     }
 
     pub fn delete_selected_record(&mut self) {

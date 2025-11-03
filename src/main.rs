@@ -74,7 +74,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('b') => app.add_break(),
             KeyCode::Char('d') => app.delete_selected_record(),
             KeyCode::Char('v') => app.enter_visual_mode(),
-            KeyCode::Char('T') => app.set_current_time_on_field(),
+            KeyCode::Char('t') => app.set_current_time_on_field(),
             KeyCode::Char('s') => {
                 let _ = storage.save(&app.day_data);
             }
