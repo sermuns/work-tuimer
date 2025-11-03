@@ -8,6 +8,8 @@ pub struct WorkRecord {
     pub start: TimePoint,
     pub end: TimePoint,
     pub total_minutes: u32,
+    #[serde(default)]
+    pub description: String,
 }
 
 impl WorkRecord {
@@ -19,6 +21,7 @@ impl WorkRecord {
             start,
             end,
             total_minutes,
+            description: String::new(),
         }
     }
 

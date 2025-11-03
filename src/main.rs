@@ -68,7 +68,6 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
             KeyCode::Left | KeyCode::Char('h') => app.move_field_left(),
             KeyCode::Right | KeyCode::Char('l') => app.move_field_right(),
-            KeyCode::Tab => app.toggle_focus_section(),
             KeyCode::Enter | KeyCode::Char('i') => app.enter_edit_mode(),
             KeyCode::Char('c') => app.change_task_name(),
             KeyCode::Char('n') => app.add_new_record(),
@@ -83,21 +82,9 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
         },
         ui::AppMode::Edit => match key.code {
             KeyCode::Esc => app.exit_edit_mode(),
-            KeyCode::Tab => {
-                // Tab cycles fields for work records, but toggles section focus when in notes
-                if matches!(app.edit_field, ui::EditField::Notes) {
-                    app.toggle_focus_section();
-                } else {
-                    app.next_field();
-                }
-            }
+            KeyCode::Tab => app.next_field(),
             KeyCode::Enter => {
-                // Enter adds newline in notes, saves in work record fields
-                if matches!(app.edit_field, ui::EditField::Notes) {
-                    app.handle_char_input('\n');
-                } else {
-                    let _ = app.save_edit();
-                }
+                let _ = app.save_edit();
             }
             KeyCode::Backspace => app.handle_backspace(),
             KeyCode::Char(c) => app.handle_char_input(c),
