@@ -7,6 +7,7 @@ pub enum AppMode {
     Edit,
     Visual,
     CommandPalette,
+    Calendar,
 }
 
 pub enum EditField {
@@ -55,6 +56,9 @@ pub struct AppState {
     pub command_palette_selected: usize,
     pub available_commands: Vec<Command>,
     pub date_changed: bool,
+    pub calendar_selected_date: Date,
+    pub calendar_view_month: time::Month,
+    pub calendar_view_year: i32,
     history: History,
 }
 
@@ -140,6 +144,9 @@ impl AppState {
         ];
         
         AppState {
+            calendar_selected_date: current_date,
+            calendar_view_month: current_date.month(),
+            calendar_view_year: current_date.year(),
             day_data,
             current_date,
             mode: AppMode::Browse,
@@ -327,21 +334,21 @@ impl AppState {
 
     pub fn add_new_record(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
+        use time::{OffsetDateTime, UtcOffset};
         
         self.save_snapshot();
         
         let id = self.day_data.next_id();
         
-        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
-            let start_minutes = current_record.end.to_minutes_since_midnight();
-            let end_minutes = (start_minutes + 60).min(24 * 60 - 1);
-            (
-                current_record.end,
-                TimePoint::from_minutes_since_midnight(end_minutes).unwrap()
-            )
-        } else {
-            (TimePoint::new(9, 0).unwrap(), TimePoint::new(17, 0).unwrap())
-        };
+        // Get current time
+        let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
+        let now = OffsetDateTime::now_utc().to_offset(local_offset);
+        let current_minutes = (now.hour() as u32) * 60 + (now.minute() as u32);
+        
+        // Set start time to current time, end time to one hour later
+        let default_start = TimePoint::from_minutes_since_midnight(current_minutes).unwrap();
+        let end_minutes = (current_minutes + 60).min(24 * 60 - 1);
+        let default_end = TimePoint::from_minutes_since_midnight(end_minutes).unwrap();
         
         let record = WorkRecord::new(id, "New Task".to_string(), default_start, default_end);
         
@@ -454,6 +461,7 @@ impl AppState {
     pub fn is_in_visual_selection(&self, index: usize) -> bool {
         let start = self.visual_start.min(self.visual_end);
         let end = self.visual_start.max(self.visual_end);
+        
         index >= start && index <= end
     }
 
@@ -624,4 +632,123 @@ impl AppState {
         self.history = History::new();
         self.date_changed = false;
     }
+
+    pub fn open_calendar(&mut self) {
+        self.mode = AppMode::Calendar;
+        self.calendar_selected_date = self.current_date;
+        self.calendar_view_month = self.current_date.month();
+        self.calendar_view_year = self.current_date.year();
+    }
+
+    pub fn close_calendar(&mut self) {
+        self.mode = AppMode::Browse;
+    }
+
+    pub fn calendar_navigate_left(&mut self) {
+        use time::Duration;
+        self.calendar_selected_date = self.calendar_selected_date.saturating_sub(Duration::days(1));
+        self.calendar_view_month = self.calendar_selected_date.month();
+        self.calendar_view_year = self.calendar_selected_date.year();
+    }
+
+    pub fn calendar_navigate_right(&mut self) {
+        use time::Duration;
+        self.calendar_selected_date = self.calendar_selected_date.saturating_add(Duration::days(1));
+        self.calendar_view_month = self.calendar_selected_date.month();
+        self.calendar_view_year = self.calendar_selected_date.year();
+    }
+
+    pub fn calendar_navigate_up(&mut self) {
+        use time::Duration;
+        self.calendar_selected_date = self.calendar_selected_date.saturating_sub(Duration::days(7));
+        self.calendar_view_month = self.calendar_selected_date.month();
+        self.calendar_view_year = self.calendar_selected_date.year();
+    }
+
+    pub fn calendar_navigate_down(&mut self) {
+        use time::Duration;
+        self.calendar_selected_date = self.calendar_selected_date.saturating_add(Duration::days(7));
+        self.calendar_view_month = self.calendar_selected_date.month();
+        self.calendar_view_year = self.calendar_selected_date.year();
+    }
+
+    pub fn calendar_previous_month(&mut self) {
+        use time::Month;
+        
+        let (new_month, new_year) = match self.calendar_view_month {
+            Month::January => (Month::December, self.calendar_view_year - 1),
+            Month::February => (Month::January, self.calendar_view_year),
+            Month::March => (Month::February, self.calendar_view_year),
+            Month::April => (Month::March, self.calendar_view_year),
+            Month::May => (Month::April, self.calendar_view_year),
+            Month::June => (Month::May, self.calendar_view_year),
+            Month::July => (Month::June, self.calendar_view_year),
+            Month::August => (Month::July, self.calendar_view_year),
+            Month::September => (Month::August, self.calendar_view_year),
+            Month::October => (Month::September, self.calendar_view_year),
+            Month::November => (Month::October, self.calendar_view_year),
+            Month::December => (Month::November, self.calendar_view_year),
+        };
+        
+        self.calendar_view_month = new_month;
+        self.calendar_view_year = new_year;
+        
+        // Adjust selected date if it's in a different month
+        if self.calendar_selected_date.month() != new_month || self.calendar_selected_date.year() != new_year {
+            // Try to keep same day of month, or use last valid day
+            let day = self.calendar_selected_date.day().min(days_in_month(new_month, new_year));
+            self.calendar_selected_date = time::Date::from_calendar_date(new_year, new_month, day).unwrap();
+        }
+    }
+
+    pub fn calendar_next_month(&mut self) {
+        use time::Month;
+        
+        let (new_month, new_year) = match self.calendar_view_month {
+            Month::January => (Month::February, self.calendar_view_year),
+            Month::February => (Month::March, self.calendar_view_year),
+            Month::March => (Month::April, self.calendar_view_year),
+            Month::April => (Month::May, self.calendar_view_year),
+            Month::May => (Month::June, self.calendar_view_year),
+            Month::June => (Month::July, self.calendar_view_year),
+            Month::July => (Month::August, self.calendar_view_year),
+            Month::August => (Month::September, self.calendar_view_year),
+            Month::September => (Month::October, self.calendar_view_year),
+            Month::October => (Month::November, self.calendar_view_year),
+            Month::November => (Month::December, self.calendar_view_year),
+            Month::December => (Month::January, self.calendar_view_year + 1),
+        };
+        
+        self.calendar_view_month = new_month;
+        self.calendar_view_year = new_year;
+        
+        // Adjust selected date if it's in a different month
+        if self.calendar_selected_date.month() != new_month || self.calendar_selected_date.year() != new_year {
+            // Try to keep same day of month, or use last valid day
+            let day = self.calendar_selected_date.day().min(days_in_month(new_month, new_year));
+            self.calendar_selected_date = time::Date::from_calendar_date(new_year, new_month, day).unwrap();
+        }
+    }
+
+    pub fn calendar_select_date(&mut self) {
+        self.current_date = self.calendar_selected_date;
+        self.date_changed = true;
+        self.close_calendar();
+    }
+}
+
+fn days_in_month(month: time::Month, year: i32) -> u8 {
+    use time::Month;
+    match month {
+        Month::January | Month::March | Month::May | Month::July | 
+        Month::August | Month::October | Month::December => 31,
+        Month::April | Month::June | Month::September | Month::November => 30,
+        Month::February => {
+            if is_leap_year(year) { 29 } else { 28 }
+        }
+    }
+}
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }

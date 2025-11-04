@@ -76,8 +76,8 @@ cargo run
 | `↓/j` | Move selection down (1 week) |
 | `←/h` | Move selection left (1 day) |
 | `→/l` | Move selection right (1 day) |
-| `</,` | Previous month |
-| `>/.` | Next month |
+| `[/</,` | Previous month |
+| `]/>/.` | Next month |
 | `Enter` | Jump to selected date |
 | `Esc` | Close calendar view |
 

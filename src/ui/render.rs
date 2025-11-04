@@ -51,6 +51,11 @@ pub fn render(frame: &mut Frame, app: &AppState) {
     if matches!(app.mode, crate::ui::AppMode::CommandPalette) {
         render_command_palette(frame, app);
     }
+    
+    // Render calendar modal if active
+    if matches!(app.mode, crate::ui::AppMode::Calendar) {
+        render_calendar(frame, app);
+    }
 }
 
 fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
@@ -374,7 +379,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
         crate::ui::AppMode::Browse => (
-            "↑/↓: Row | ←/→: Field | [/]: Day | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | ?: Help | q: Quit",
+            "↑/↓: Row | ←/→: Field | [/]: Day | C: Calendar | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | T: Now | ?: Help | q: Quit",
             Color::Cyan,
             "BROWSE"
         ),
@@ -392,6 +397,11 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
             "↑/↓: Navigate | Enter: Execute | Esc: Cancel",
             Color::LightGreen,
             "COMMAND PALETTE"
+        ),
+        crate::ui::AppMode::Calendar => (
+            "hjkl/arrows: Navigate | </>: Month | Enter: Select | Esc: Cancel",
+            Color::Magenta,
+            "CALENDAR"
         ),
     };
 
@@ -526,4 +536,245 @@ fn render_command_palette(frame: &mut Frame, app: &AppState) {
     );
     
     frame.render_widget(results_table, chunks[1]);
+}
+
+fn render_calendar(frame: &mut Frame, app: &AppState) {
+    use ratatui::widgets::Clear;
+    use time::{Date, Month, Weekday};
+    
+    // Create a centered modal
+    let area = frame.size();
+    let width = area.width.min(60);
+    let height = area.height.min(25);
+    let x = (area.width.saturating_sub(width)) / 2;
+    let y = (area.height.saturating_sub(height)) / 2;
+    
+    let modal_area = Rect {
+        x,
+        y,
+        width,
+        height,
+    };
+    
+    // Clear the background
+    frame.render_widget(Clear, modal_area);
+    
+    // Add a background block for the entire modal
+    let bg_block = Block::default()
+        .style(Style::default().bg(Color::Rgb(20, 20, 30)));
+    frame.render_widget(bg_block, modal_area);
+    
+    // Create the calendar layout
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Length(3), // Month/Year header
+            Constraint::Min(15),   // Calendar grid
+        ])
+        .split(modal_area);
+    
+    // Render month/year header
+    let month_name = match app.calendar_view_month {
+        Month::January => "January",
+        Month::February => "February",
+        Month::March => "March",
+        Month::April => "April",
+        Month::May => "May",
+        Month::June => "June",
+        Month::July => "July",
+        Month::August => "August",
+        Month::September => "September",
+        Month::October => "October",
+        Month::November => "November",
+        Month::December => "December",
+    };
+    
+    let header_text = format!("📅  {} {}  [< prev] [next >]", month_name, app.calendar_view_year);
+    let header = Paragraph::new(header_text)
+        .style(Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD))
+        .alignment(Alignment::Center)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Color::Magenta))
+                .style(Style::default().bg(Color::Rgb(30, 30, 45)))
+        );
+    
+    frame.render_widget(header, chunks[0]);
+    
+    // Build calendar grid
+    let first_day = Date::from_calendar_date(
+        app.calendar_view_year,
+        app.calendar_view_month,
+        1
+    ).unwrap();
+    
+    let days_in_month = get_days_in_month(app.calendar_view_month, app.calendar_view_year);
+    let first_weekday = first_day.weekday();
+    
+    // Calculate starting offset (0 = Monday, 6 = Sunday)
+    let offset = match first_weekday {
+        Weekday::Monday => 0,
+        Weekday::Tuesday => 1,
+        Weekday::Wednesday => 2,
+        Weekday::Thursday => 3,
+        Weekday::Friday => 4,
+        Weekday::Saturday => 5,
+        Weekday::Sunday => 6,
+    };
+    
+    // Create calendar rows
+    let mut rows = Vec::new();
+    
+    // Header row with weekday names
+    rows.push(
+        Row::new(vec![
+            Cell::from("Mon").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Cell::from("Tue").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Cell::from("Wed").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Cell::from("Thu").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Cell::from("Fri").style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Cell::from("Sat").style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+            Cell::from("Sun").style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        ])
+    );
+    
+    // Calendar days
+    let mut current_day = 1;
+    let mut week_row = Vec::new();
+    
+    // Fill in the offset days with empty cells
+    for _ in 0..offset {
+        week_row.push(Cell::from("  "));
+    }
+    
+    // Fill in the actual days
+    for day_of_week in offset..7 {
+        if current_day <= days_in_month {
+            let date = Date::from_calendar_date(
+                app.calendar_view_year,
+                app.calendar_view_month,
+                current_day
+            ).unwrap();
+            
+            let is_selected = date == app.calendar_selected_date;
+            let is_today = date == time::OffsetDateTime::now_utc().date();
+            let is_current_view = date == app.current_date;
+            
+            let day_str = format!("{:2}", current_day);
+            
+            let style = if is_selected {
+                Style::default()
+                    .bg(Color::Rgb(147, 51, 234)) // Purple highlight
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD)
+            } else if is_current_view {
+                Style::default()
+                    .bg(Color::Rgb(30, 80, 150)) // Blue for current viewed day
+                    .fg(Color::White)
+                    .add_modifier(Modifier::BOLD)
+            } else if is_today {
+                Style::default()
+                    .fg(Color::LightGreen)
+                    .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+            } else {
+                Style::default().fg(Color::White)
+            };
+            
+            week_row.push(Cell::from(day_str).style(style));
+            current_day += 1;
+        } else {
+            week_row.push(Cell::from("  "));
+        }
+        
+        if day_of_week == 6 {
+            rows.push(Row::new(week_row.clone()));
+            week_row.clear();
+        }
+    }
+    
+    // Continue filling remaining weeks
+    while current_day <= days_in_month {
+        for _ in 0..7 {
+            if current_day <= days_in_month {
+                let date = Date::from_calendar_date(
+                    app.calendar_view_year,
+                    app.calendar_view_month,
+                    current_day
+                ).unwrap();
+                
+                let is_selected = date == app.calendar_selected_date;
+                let is_today = date == time::OffsetDateTime::now_utc().date();
+                let is_current_view = date == app.current_date;
+                
+                let day_str = format!("{:2}", current_day);
+                
+                let style = if is_selected {
+                    Style::default()
+                        .bg(Color::Rgb(147, 51, 234))
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD)
+                } else if is_current_view {
+                    Style::default()
+                        .bg(Color::Rgb(30, 80, 150))
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD)
+                } else if is_today {
+                    Style::default()
+                        .fg(Color::LightGreen)
+                        .add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+                } else {
+                    Style::default().fg(Color::White)
+                };
+                
+                week_row.push(Cell::from(day_str).style(style));
+                current_day += 1;
+            } else {
+                week_row.push(Cell::from("  "));
+            }
+        }
+        rows.push(Row::new(week_row.clone()));
+        week_row.clear();
+    }
+    
+    let calendar_table = Table::new(
+        rows,
+        [
+            Constraint::Length(6),
+            Constraint::Length(6),
+            Constraint::Length(6),
+            Constraint::Length(6),
+            Constraint::Length(6),
+            Constraint::Length(6),
+            Constraint::Length(6),
+        ],
+    )
+    .block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Magenta))
+            .title("📆 Select Date")
+            .title_style(Style::default().fg(Color::Magenta).add_modifier(Modifier::BOLD))
+            .style(Style::default().bg(Color::Rgb(25, 25, 38)))
+    );
+    
+    frame.render_widget(calendar_table, chunks[1]);
+}
+
+fn get_days_in_month(month: time::Month, year: i32) -> u8 {
+    use time::Month;
+    match month {
+        Month::January | Month::March | Month::May | Month::July | 
+        Month::August | Month::October | Month::December => 31,
+        Month::April | Month::June | Month::September | Month::November => 30,
+        Month::February => {
+            if is_leap_year_render(year) { 29 } else { 28 }
+        }
+    }
+}
+
+fn is_leap_year_render(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
 }

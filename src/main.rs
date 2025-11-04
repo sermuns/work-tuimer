@@ -72,6 +72,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
         ui::AppMode::Browse => match key.code {
             KeyCode::Char('q') => app.should_quit = true,
             KeyCode::Char('?') => app.open_command_palette(),
+            KeyCode::Char('C') => app.open_calendar(),
             KeyCode::Up | KeyCode::Char('k') => app.move_selection_up(),
             KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
             KeyCode::Left | KeyCode::Char('h') => app.move_field_left(),
@@ -127,6 +128,17 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
                 _ => {}
             }
         }
+        ui::AppMode::Calendar => match key.code {
+            KeyCode::Esc => app.close_calendar(),
+            KeyCode::Enter => app.calendar_select_date(),
+            KeyCode::Left | KeyCode::Char('h') => app.calendar_navigate_left(),
+            KeyCode::Right | KeyCode::Char('l') => app.calendar_navigate_right(),
+            KeyCode::Up | KeyCode::Char('k') => app.calendar_navigate_up(),
+            KeyCode::Down | KeyCode::Char('j') => app.calendar_navigate_down(),
+            KeyCode::Char('<') | KeyCode::Char(',') | KeyCode::Char('[') => app.calendar_previous_month(),
+            KeyCode::Char('>') | KeyCode::Char('.') | KeyCode::Char(']') => app.calendar_next_month(),
+            _ => {}
+        },
     }
 }
 

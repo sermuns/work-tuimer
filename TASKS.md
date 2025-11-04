@@ -93,12 +93,6 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ### Future/Research Tasks
 
-#### Calendar View
-- [ ] Design mini-calendar UI component
-- [ ] Implement month view navigation
-- [ ] Show daily work time summaries
-- [ ] Support clicking to jump to specific dates
-
 #### Recurring Tasks
 - [ ] Design recurring task data model
 - [ ] Add UI for setting recurrence rules
@@ -126,6 +120,11 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 ---
 
 ## Completed Tasks
+
+### New Task Default Times (2025-11-04)
+- [x] Update `add_new_record()` to use current time as start time
+- [x] Set end time to one hour after current time by default
+- **Notes**: New tasks now start at the current time instead of using the end time of the selected record or fixed 9:00-17:00 defaults.
 
 ### Day Navigation Feature (2025-11-03)
 - [x] Add `current_date` field to AppState to track viewed date
