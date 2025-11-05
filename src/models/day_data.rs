@@ -30,14 +30,6 @@ impl DayData {
         self.work_records.remove(&id)
     }
 
-    pub fn get_record(&self, id: u32) -> Option<&WorkRecord> {
-        self.work_records.get(&id)
-    }
-
-    pub fn get_record_mut(&mut self, id: u32) -> Option<&mut WorkRecord> {
-        self.work_records.get_mut(&id)
-    }
-
     pub fn next_id(&mut self) -> u32 {
         self.last_id += 1;
         self.last_id

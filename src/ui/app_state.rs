@@ -1,5 +1,5 @@
-use crate::models::{DayData, WorkRecord};
 use super::history::History;
+use crate::models::{DayData, WorkRecord};
 use time::Date;
 
 pub enum AppMode {
@@ -23,6 +23,7 @@ pub struct Command {
     pub action: CommandAction,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum CommandAction {
     MoveUp,
     MoveDown,
@@ -142,7 +143,7 @@ impl AppState {
                 action: CommandAction::Quit,
             },
         ];
-        
+
         AppState {
             calendar_selected_date: current_date,
             calendar_view_month: current_date.month(),
@@ -254,27 +255,25 @@ impl AppState {
                 if !c.is_ascii_digit() {
                     return;
                 }
-                
+
                 if self.input_buffer.len() != 5 {
                     return;
                 }
-                
+
                 let positions = [0, 1, 3, 4];
                 if self.time_cursor >= positions.len() {
                     return;
                 }
-                
+
                 let pos = positions[self.time_cursor];
                 let mut chars: Vec<char> = self.input_buffer.chars().collect();
                 chars[pos] = c;
                 self.input_buffer = chars.into_iter().collect();
-                
+
                 self.time_cursor += 1;
-                
-                if self.time_cursor >= positions.len() {
-                    if self.save_current_field().is_ok() {
-                        self.exit_edit_mode();
-                    }
+
+                if self.time_cursor >= positions.len() && self.save_current_field().is_ok() {
+                    self.exit_edit_mode();
                 }
             }
         }
@@ -297,7 +296,7 @@ impl AppState {
         let records = self.day_data.get_sorted_records();
         if let Some(&record) = records.get(self.selected_index) {
             let id = record.id;
-            
+
             if let Some(record_mut) = self.day_data.work_records.get_mut(&id) {
                 match self.edit_field {
                     EditField::Name => {
@@ -307,12 +306,16 @@ impl AppState {
                         record_mut.name = self.input_buffer.trim().to_string();
                     }
                     EditField::Start => {
-                        record_mut.start = self.input_buffer.parse()
+                        record_mut.start = self
+                            .input_buffer
+                            .parse()
                             .map_err(|_| "Invalid start time format (use HH:MM)".to_string())?;
                         record_mut.update_duration();
                     }
                     EditField::End => {
-                        record_mut.end = self.input_buffer.parse()
+                        record_mut.end = self
+                            .input_buffer
+                            .parse()
                             .map_err(|_| "Invalid end time format (use HH:MM)".to_string())?;
                         record_mut.update_duration();
                     }
@@ -334,63 +337,71 @@ impl AppState {
 
     pub fn add_new_record(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
-        
+
         self.save_snapshot();
-        
+
         let id = self.day_data.next_id();
-        
-        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
+
+        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record()
+        {
             let start_minutes = current_record.end.to_minutes_since_midnight();
             let end_minutes = (start_minutes + 60).min(24 * 60 - 1);
             (
                 current_record.end,
-                TimePoint::from_minutes_since_midnight(end_minutes).unwrap()
+                TimePoint::from_minutes_since_midnight(end_minutes).unwrap(),
             )
         } else {
-            (TimePoint::new(9, 0).unwrap(), TimePoint::new(10, 0).unwrap())
+            (
+                TimePoint::new(9, 0).unwrap(),
+                TimePoint::new(10, 0).unwrap(),
+            )
         };
-        
+
         let record = WorkRecord::new(id, "New Task".to_string(), default_start, default_end);
-        
+
         self.day_data.add_record(record);
-        
+
         let records = self.day_data.get_sorted_records();
         self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
     }
 
     pub fn add_break(&mut self) {
         use crate::models::{TimePoint, WorkRecord};
-        
+
         self.save_snapshot();
-        
+
         let id = self.day_data.next_id();
-        
-        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record() {
+
+        let (default_start, default_end) = if let Some(current_record) = self.get_selected_record()
+        {
             let start_minutes = current_record.end.to_minutes_since_midnight();
             let end_minutes = (start_minutes + 15).min(24 * 60 - 1);
             (
                 current_record.end,
-                TimePoint::from_minutes_since_midnight(end_minutes).unwrap()
+                TimePoint::from_minutes_since_midnight(end_minutes).unwrap(),
             )
         } else {
-            (TimePoint::new(12, 0).unwrap(), TimePoint::new(12, 15).unwrap())
+            (
+                TimePoint::new(12, 0).unwrap(),
+                TimePoint::new(12, 15).unwrap(),
+            )
         };
-        
+
         let record = WorkRecord::new(id, "Break".to_string(), default_start, default_end);
-        
+
         self.day_data.add_record(record);
-        
+
         let records = self.day_data.get_sorted_records();
         self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
     }
 
     pub fn delete_selected_record(&mut self) {
         self.save_snapshot();
-        
+
         let records = self.day_data.get_sorted_records();
         if let Some(&record) = records.get(self.selected_index) {
             self.day_data.remove_record(record.id);
-            
+
             if self.selected_index >= self.day_data.work_records.len() {
                 self.selected_index = self.day_data.work_records.len().saturating_sub(1);
             }
@@ -417,17 +428,17 @@ impl AppState {
 
     pub fn set_current_time_on_field(&mut self) {
         use time::{OffsetDateTime, UtcOffset};
-        
+
         self.save_snapshot();
-        
+
         let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
         let now = OffsetDateTime::now_utc().to_offset(local_offset);
         let current_time = format!("{:02}:{:02}", now.hour(), now.minute());
-        
+
         let records = self.day_data.get_sorted_records();
         if let Some(&record) = records.get(self.selected_index) {
             let id = record.id;
-            
+
             if let Some(record_mut) = self.day_data.work_records.get_mut(&id) {
                 match self.edit_field {
                     EditField::Start => {
@@ -461,32 +472,32 @@ impl AppState {
     pub fn is_in_visual_selection(&self, index: usize) -> bool {
         let start = self.visual_start.min(self.visual_end);
         let end = self.visual_start.max(self.visual_end);
-        
+
         index >= start && index <= end
     }
 
     pub fn delete_visual_selection(&mut self) {
         self.save_snapshot();
-        
+
         let records = self.day_data.get_sorted_records();
         let start = self.visual_start.min(self.visual_end);
         let end = self.visual_start.max(self.visual_end);
-        
+
         let ids_to_delete: Vec<u32> = records
             .iter()
             .enumerate()
             .filter(|(i, _)| *i >= start && *i <= end)
             .map(|(_, record)| record.id)
             .collect();
-        
+
         for id in ids_to_delete {
             self.day_data.remove_record(id);
         }
-        
+
         if self.selected_index >= self.day_data.work_records.len() {
             self.selected_index = self.day_data.work_records.len().saturating_sub(1);
         }
-        
+
         self.exit_visual_mode();
     }
 
@@ -497,7 +508,7 @@ impl AppState {
     pub fn undo(&mut self) {
         if let Some(previous_state) = self.history.undo(self.day_data.clone()) {
             self.day_data = previous_state;
-            
+
             if self.selected_index >= self.day_data.work_records.len() {
                 self.selected_index = self.day_data.work_records.len().saturating_sub(1);
             }
@@ -507,19 +518,11 @@ impl AppState {
     pub fn redo(&mut self) {
         if let Some(next_state) = self.history.redo(self.day_data.clone()) {
             self.day_data = next_state;
-            
+
             if self.selected_index >= self.day_data.work_records.len() {
                 self.selected_index = self.day_data.work_records.len().saturating_sub(1);
             }
         }
-    }
-
-    pub fn can_undo(&self) -> bool {
-        self.history.can_undo()
-    }
-
-    pub fn can_redo(&self) -> bool {
-        self.history.can_redo()
     }
 
     pub fn open_command_palette(&mut self) {
@@ -559,69 +562,54 @@ impl AppState {
     pub fn get_filtered_commands(&self) -> Vec<(usize, i64, &Command)> {
         use fuzzy_matcher::FuzzyMatcher;
         use fuzzy_matcher::skim::SkimMatcherV2;
-        
+
         let matcher = SkimMatcherV2::default();
         let query = self.command_palette_input.as_str();
-        
+
         if query.is_empty() {
-            return self.available_commands
+            return self
+                .available_commands
                 .iter()
                 .enumerate()
                 .map(|(i, cmd)| (i, 0, cmd))
                 .collect();
         }
-        
-        let mut results: Vec<(usize, i64, &Command)> = self.available_commands
+
+        let mut results: Vec<(usize, i64, &Command)> = self
+            .available_commands
             .iter()
             .enumerate()
             .filter_map(|(i, cmd)| {
                 let search_text = format!("{} {}", cmd.key, cmd.description);
-                matcher.fuzzy_match(&search_text, query)
+                matcher
+                    .fuzzy_match(&search_text, query)
                     .map(|score| (i, score, cmd))
             })
             .collect();
-        
+
         results.sort_by(|a, b| b.1.cmp(&a.1));
         results
     }
 
     pub fn execute_selected_command(&mut self) -> Option<CommandAction> {
         let filtered = self.get_filtered_commands();
-        if let Some((_, _, cmd)) = filtered.get(self.command_palette_selected) {
-            let action = match cmd.action {
-                CommandAction::MoveUp => CommandAction::MoveUp,
-                CommandAction::MoveDown => CommandAction::MoveDown,
-                CommandAction::MoveLeft => CommandAction::MoveLeft,
-                CommandAction::MoveRight => CommandAction::MoveRight,
-                CommandAction::Edit => CommandAction::Edit,
-                CommandAction::Change => CommandAction::Change,
-                CommandAction::New => CommandAction::New,
-                CommandAction::Break => CommandAction::Break,
-                CommandAction::Delete => CommandAction::Delete,
-                CommandAction::Visual => CommandAction::Visual,
-                CommandAction::SetNow => CommandAction::SetNow,
-                CommandAction::Undo => CommandAction::Undo,
-                CommandAction::Redo => CommandAction::Redo,
-                CommandAction::Save => CommandAction::Save,
-                CommandAction::Quit => CommandAction::Quit,
-            };
-            self.close_command_palette();
-            Some(action)
-        } else {
-            None
-        }
+        let action = filtered
+            .get(self.command_palette_selected)
+            .map(|(_, _, cmd)| cmd.action);
+        self.close_command_palette();
+        action
     }
 
     pub fn navigate_to_previous_day(&mut self) {
         use time::Duration;
-        
+
         self.current_date = self.current_date.saturating_sub(Duration::days(1));
         self.date_changed = true;
     }
 
     pub fn navigate_to_next_day(&mut self) {
         use time::Duration;
-        
+
         self.current_date = self.current_date.saturating_add(Duration::days(1));
         self.date_changed = true;
     }
@@ -646,35 +634,43 @@ impl AppState {
 
     pub fn calendar_navigate_left(&mut self) {
         use time::Duration;
-        self.calendar_selected_date = self.calendar_selected_date.saturating_sub(Duration::days(1));
+        self.calendar_selected_date = self
+            .calendar_selected_date
+            .saturating_sub(Duration::days(1));
         self.calendar_view_month = self.calendar_selected_date.month();
         self.calendar_view_year = self.calendar_selected_date.year();
     }
 
     pub fn calendar_navigate_right(&mut self) {
         use time::Duration;
-        self.calendar_selected_date = self.calendar_selected_date.saturating_add(Duration::days(1));
+        self.calendar_selected_date = self
+            .calendar_selected_date
+            .saturating_add(Duration::days(1));
         self.calendar_view_month = self.calendar_selected_date.month();
         self.calendar_view_year = self.calendar_selected_date.year();
     }
 
     pub fn calendar_navigate_up(&mut self) {
         use time::Duration;
-        self.calendar_selected_date = self.calendar_selected_date.saturating_sub(Duration::days(7));
+        self.calendar_selected_date = self
+            .calendar_selected_date
+            .saturating_sub(Duration::days(7));
         self.calendar_view_month = self.calendar_selected_date.month();
         self.calendar_view_year = self.calendar_selected_date.year();
     }
 
     pub fn calendar_navigate_down(&mut self) {
         use time::Duration;
-        self.calendar_selected_date = self.calendar_selected_date.saturating_add(Duration::days(7));
+        self.calendar_selected_date = self
+            .calendar_selected_date
+            .saturating_add(Duration::days(7));
         self.calendar_view_month = self.calendar_selected_date.month();
         self.calendar_view_year = self.calendar_selected_date.year();
     }
 
     pub fn calendar_previous_month(&mut self) {
         use time::Month;
-        
+
         let (new_month, new_year) = match self.calendar_view_month {
             Month::January => (Month::December, self.calendar_view_year - 1),
             Month::February => (Month::January, self.calendar_view_year),
@@ -689,21 +685,27 @@ impl AppState {
             Month::November => (Month::October, self.calendar_view_year),
             Month::December => (Month::November, self.calendar_view_year),
         };
-        
+
         self.calendar_view_month = new_month;
         self.calendar_view_year = new_year;
-        
+
         // Adjust selected date if it's in a different month
-        if self.calendar_selected_date.month() != new_month || self.calendar_selected_date.year() != new_year {
+        if self.calendar_selected_date.month() != new_month
+            || self.calendar_selected_date.year() != new_year
+        {
             // Try to keep same day of month, or use last valid day
-            let day = self.calendar_selected_date.day().min(days_in_month(new_month, new_year));
-            self.calendar_selected_date = time::Date::from_calendar_date(new_year, new_month, day).unwrap();
+            let day = self
+                .calendar_selected_date
+                .day()
+                .min(days_in_month(new_month, new_year));
+            self.calendar_selected_date =
+                time::Date::from_calendar_date(new_year, new_month, day).unwrap();
         }
     }
 
     pub fn calendar_next_month(&mut self) {
         use time::Month;
-        
+
         let (new_month, new_year) = match self.calendar_view_month {
             Month::January => (Month::February, self.calendar_view_year),
             Month::February => (Month::March, self.calendar_view_year),
@@ -718,15 +720,21 @@ impl AppState {
             Month::November => (Month::December, self.calendar_view_year),
             Month::December => (Month::January, self.calendar_view_year + 1),
         };
-        
+
         self.calendar_view_month = new_month;
         self.calendar_view_year = new_year;
-        
+
         // Adjust selected date if it's in a different month
-        if self.calendar_selected_date.month() != new_month || self.calendar_selected_date.year() != new_year {
+        if self.calendar_selected_date.month() != new_month
+            || self.calendar_selected_date.year() != new_year
+        {
             // Try to keep same day of month, or use last valid day
-            let day = self.calendar_selected_date.day().min(days_in_month(new_month, new_year));
-            self.calendar_selected_date = time::Date::from_calendar_date(new_year, new_month, day).unwrap();
+            let day = self
+                .calendar_selected_date
+                .day()
+                .min(days_in_month(new_month, new_year));
+            self.calendar_selected_date =
+                time::Date::from_calendar_date(new_year, new_month, day).unwrap();
         }
     }
 
@@ -740,11 +748,20 @@ impl AppState {
 fn days_in_month(month: time::Month, year: i32) -> u8 {
     use time::Month;
     match month {
-        Month::January | Month::March | Month::May | Month::July | 
-        Month::August | Month::October | Month::December => 31,
+        Month::January
+        | Month::March
+        | Month::May
+        | Month::July
+        | Month::August
+        | Month::October
+        | Month::December => 31,
         Month::April | Month::June | Month::September | Month::November => 30,
         Month::February => {
-            if is_leap_year(year) { 29 } else { 28 }
+            if is_leap_year(year) {
+                29
+            } else {
+                28
+            }
         }
     }
 }

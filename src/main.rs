@@ -6,9 +6,9 @@ use anyhow::Result;
 use crossterm::{
     event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use ratatui::{backend::CrosstermBackend, Terminal};
+use ratatui::{Terminal, backend::CrosstermBackend};
 use std::io;
 use time::OffsetDateTime;
 use ui::AppState;
@@ -112,24 +112,22 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('d') => app.delete_visual_selection(),
             _ => {}
         },
-        ui::AppMode::CommandPalette => {
-            match key.code {
-                KeyCode::Esc => app.close_command_palette(),
-                KeyCode::Up => app.move_command_palette_up(),
-                KeyCode::Down => {
-                    let filtered_count = app.get_filtered_commands().len();
-                    app.move_command_palette_down(filtered_count);
-                }
-                KeyCode::Enter => {
-                    if let Some(action) = app.execute_selected_command() {
-                        execute_command_action(app, action, storage);
-                    }
-                }
-                KeyCode::Backspace => app.handle_command_palette_backspace(),
-                KeyCode::Char(c) => app.handle_command_palette_char(c),
-                _ => {}
+        ui::AppMode::CommandPalette => match key.code {
+            KeyCode::Esc => app.close_command_palette(),
+            KeyCode::Up => app.move_command_palette_up(),
+            KeyCode::Down => {
+                let filtered_count = app.get_filtered_commands().len();
+                app.move_command_palette_down(filtered_count);
             }
-        }
+            KeyCode::Enter => {
+                if let Some(action) = app.execute_selected_command() {
+                    execute_command_action(app, action, storage);
+                }
+            }
+            KeyCode::Backspace => app.handle_command_palette_backspace(),
+            KeyCode::Char(c) => app.handle_command_palette_char(c),
+            _ => {}
+        },
         ui::AppMode::Calendar => match key.code {
             KeyCode::Esc => app.close_calendar(),
             KeyCode::Enter => app.calendar_select_date(),
@@ -137,16 +135,24 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Right | KeyCode::Char('l') => app.calendar_navigate_right(),
             KeyCode::Up | KeyCode::Char('k') => app.calendar_navigate_up(),
             KeyCode::Down | KeyCode::Char('j') => app.calendar_navigate_down(),
-            KeyCode::Char('<') | KeyCode::Char(',') | KeyCode::Char('[') => app.calendar_previous_month(),
-            KeyCode::Char('>') | KeyCode::Char('.') | KeyCode::Char(']') => app.calendar_next_month(),
+            KeyCode::Char('<') | KeyCode::Char(',') | KeyCode::Char('[') => {
+                app.calendar_previous_month()
+            }
+            KeyCode::Char('>') | KeyCode::Char('.') | KeyCode::Char(']') => {
+                app.calendar_next_month()
+            }
             _ => {}
         },
     }
 }
 
-fn execute_command_action(app: &mut AppState, action: ui::app_state::CommandAction, storage: &storage::Storage) {
+fn execute_command_action(
+    app: &mut AppState,
+    action: ui::app_state::CommandAction,
+    storage: &storage::Storage,
+) {
     use ui::app_state::CommandAction;
-    
+
     match action {
         CommandAction::MoveUp => app.move_selection_up(),
         CommandAction::MoveDown => app.move_selection_down(),

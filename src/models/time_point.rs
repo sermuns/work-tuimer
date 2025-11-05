@@ -29,7 +29,7 @@ impl TimePoint {
         })
     }
 
-    pub fn to_minutes_since_midnight(&self) -> u32 {
+    pub fn to_minutes_since_midnight(self) -> u32 {
         (self.hour as u32) * 60 + (self.minute as u32)
     }
 
