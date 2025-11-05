@@ -4,7 +4,7 @@ use std::fs;
 use std::path::PathBuf;
 
 /// Configuration for issue tracker integrations (JIRA, Linear, etc.)
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub integrations: IntegrationConfig,
@@ -25,30 +25,21 @@ pub struct IntegrationConfig {
     pub linear: TrackerConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TrackerConfig {
+    #[serde(default)]
     pub enabled: bool,
+    #[serde(default)]
     pub base_url: String,
     /// Regex patterns to match ticket IDs for this tracker
     #[serde(default)]
     pub ticket_patterns: Vec<String>,
     /// URL template for browsing tickets: {base_url}, {ticket}
+    #[serde(default)]
     pub browse_url: String,
     /// URL template for worklog page: {base_url}, {ticket}
     #[serde(default)]
     pub worklog_url: String,
-}
-
-impl Default for TrackerConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            base_url: String::new(),
-            ticket_patterns: vec![],
-            browse_url: String::new(),
-            worklog_url: String::new(),
-        }
-    }
 }
 
 impl Default for IntegrationConfig {
@@ -71,23 +62,14 @@ fn default_tracker() -> String {
     "jira".to_string()
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Self {
-            integrations: IntegrationConfig::default(),
-        }
-    }
-}
-
 impl Config {
     /// Load config from file, or return defaults if file doesn't exist
     pub fn load() -> Result<Self> {
         let config_path = Self::get_config_path();
 
         if config_path.exists() {
-            let contents =
-                fs::read_to_string(&config_path)
-                    .context(format!("Failed to read config file: {:?}", config_path))?;
+            let contents = fs::read_to_string(&config_path)
+                .context(format!("Failed to read config file: {:?}", config_path))?;
             let config: Config =
                 toml::from_str(&contents).context("Failed to parse config TOML")?;
             Ok(config)
@@ -103,22 +85,6 @@ impl Config {
         } else {
             PathBuf::from("./config.toml")
         }
-    }
-
-    /// Save config to file
-    pub fn save(&self) -> Result<()> {
-        let config_path = Self::get_config_path();
-
-        if let Some(parent) = config_path.parent() {
-            fs::create_dir_all(parent)
-                .context(format!("Failed to create config directory: {:?}", parent))?;
-        }
-
-        let toml_str = toml::to_string_pretty(self).context("Failed to serialize config")?;
-        fs::write(&config_path, toml_str)
-            .context(format!("Failed to write config file: {:?}", config_path))?;
-
-        Ok(())
     }
 }
 
@@ -160,7 +126,10 @@ worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to deserialize");
-        assert_eq!(config.integrations.jira.base_url, "https://test.atlassian.net");
+        assert_eq!(
+            config.integrations.jira.base_url,
+            "https://test.atlassian.net"
+        );
         assert_eq!(config.integrations.jira.ticket_patterns[0], "^PROJ-\\d+$");
     }
 
