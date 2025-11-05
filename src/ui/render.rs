@@ -157,15 +157,15 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             };
 
             // Determine display text and styles for each field
-            let (name_display, start_display, end_display, description_display) = if is_editing {
+            let (name_display, start_display, end_display, ticket_display) = if is_editing {
                 match app.edit_field {
                     crate::ui::EditField::Name => (
                         format!("{} {}", icon, app.input_buffer),
                         record.start.to_string(),
                         record.end.to_string(),
-                        record.description.clone(),
+                        record.ticket.clone().unwrap_or_default(),
                     ),
-                    crate::ui::EditField::Description => (
+                    crate::ui::EditField::Ticket => (
                         format!("{} {}", icon, record.name),
                         record.start.to_string(),
                         record.end.to_string(),
@@ -197,13 +197,13 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                                 format!("{} {}", icon, record.name),
                                 display,
                                 record.end.to_string(),
-                                record.description.clone(),
+                                record.ticket.clone().unwrap_or_default(),
                             ),
                             crate::ui::EditField::End => (
                                 format!("{} {}", icon, record.name),
                                 record.start.to_string(),
                                 display,
-                                record.description.clone(),
+                                record.ticket.clone().unwrap_or_default(),
                             ),
                             _ => unreachable!(),
                         }
@@ -214,7 +214,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     format!("{} {}", icon, record.name),
                     record.start.to_string(),
                     record.end.to_string(),
-                    record.description.clone(),
+                    record.ticket.clone().unwrap_or_default(),
                 )
             };
 
@@ -267,19 +267,19 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             };
 
             let description_style = if is_editing
-                && matches!(app.edit_field, crate::ui::EditField::Description)
+                && matches!(app.edit_field, crate::ui::EditField::Ticket)
             {
                 Style::default()
                     .bg(edit_bg)
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD)
-            } else if is_selected && matches!(app.edit_field, crate::ui::EditField::Description) {
+            } else if is_selected && matches!(app.edit_field, crate::ui::EditField::Ticket) {
                 Style::default()
                     .bg(focus_bg)
                     .fg(Color::White)
                     .add_modifier(Modifier::BOLD)
             } else {
-                Style::default().fg(Color::LightCyan)
+                Style::default().fg(Color::Blue) // Blue for ticket badges
             };
 
             Row::new(vec![
@@ -288,7 +288,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                 Cell::from(end_display).style(end_style),
                 Cell::from(record.format_duration())
                     .style(Style::default().fg(Color::LightMagenta)),
-                Cell::from(description_display).style(description_style),
+                Cell::from(format!("[{}]", ticket_display)).style(description_style),
             ])
             .style(style)
         })
@@ -310,7 +310,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             Cell::from("🕐 Start"),
             Cell::from("🕐 End"),
             Cell::from("⏱  Duration"),
-            Cell::from("📄 Description"),
+            Cell::from("🎫 Ticket"),
         ])
         .style(
             Style::default()
@@ -423,7 +423,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
         crate::ui::AppMode::Browse => (
-            "↑/↓: Row | ←/→: Field | [/]: Day | C: Calendar | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | t: Now | ?: Help | q: Quit",
+            "↑/↓: Row | ←/→: Field | [/]: Day | C: Calendar | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | Shift+J: Open Ticket | t: Now | ?: Help | q: Quit",
             Color::Cyan,
             "BROWSE",
         ),
