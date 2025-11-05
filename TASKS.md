@@ -121,6 +121,20 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Completed Tasks
 
+### Feature: JIRA/Linear Integration (2025-11-05)
+- [x] Add dependencies: `toml`, `regex` crates (removed `open` crate, using `std::process::Command` instead)
+- [x] Create config system (`src/config/mod.rs`) with TOML support
+- [x] Build integrations module (`src/integrations/mod.rs`) with ticket extraction and URL building
+- [x] Update WorkRecord model to include optional `ticket` field
+- [x] Update AppState to support Ticket field in edit mode (Name → Start → End → Ticket cycling)
+- [x] Add Shift+J keybinding to open tickets in browser
+- [x] Update UI rendering to display tickets with blue badge styling
+- [x] Update README with JIRA/Linear integration documentation
+- **Context**: Implemented full JIRA and Linear issue tracker integration allowing users to open tickets directly from work records. Features auto-detection of tracker type and customizable configuration via `~/.config/work-tuimer/config.toml`
+- **Testing**: All 19 unit tests pass (config serialization, URL building, ticket pattern matching)
+- **Build**: Successfully compiles via `nix-shell --run 'cargo build'` (resolves libiconv linking issue)
+- **Files Modified**: Cargo.toml, src/main.rs, src/config/mod.rs (NEW), src/integrations/mod.rs (NEW), src/models/work_record.rs, src/ui/app_state.rs, src/ui/render.rs, README.md
+
 ### Bug Fix: New Task Placement (2025-11-05)
 - [x] Fix `add_new_record()` to place new tasks after selected record instead of at current time
 - **Context**: The "n" keybind was creating tasks at random positions (wherever current time fell in the sorted list), while "b" for breaks worked correctly

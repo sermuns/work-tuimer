@@ -1,4 +1,5 @@
 use super::history::History;
+use crate::config::Config;
 use crate::models::{DayData, WorkRecord};
 use time::Date;
 
@@ -14,7 +15,7 @@ pub enum EditField {
     Name,
     Start,
     End,
-    Description,
+    Ticket,
 }
 
 pub struct Command {
@@ -60,6 +61,8 @@ pub struct AppState {
     pub calendar_selected_date: Date,
     pub calendar_view_month: time::Month,
     pub calendar_view_year: i32,
+    pub config: Config,
+    pub last_error_message: Option<String>,
     history: History,
 }
 
@@ -162,6 +165,8 @@ impl AppState {
             command_palette_selected: 0,
             available_commands,
             date_changed: false,
+            config: Config::load().unwrap_or_default(),
+            last_error_message: None,
             history: History::new(),
         }
     }
@@ -196,7 +201,7 @@ impl AppState {
                 EditField::Name => record.name.clone(),
                 EditField::Start => record.start.to_string(),
                 EditField::End => record.end.to_string(),
-                EditField::Description => record.description.clone(),
+                EditField::Ticket => record.ticket.clone().unwrap_or_default(),
             };
             self.mode = AppMode::Edit;
             self.input_buffer = input_value;
@@ -233,11 +238,11 @@ impl AppState {
                     EditField::End
                 }
                 EditField::End => {
-                    self.input_buffer = record.description.clone();
+                    self.input_buffer = record.ticket.clone().unwrap_or_default();
                     self.time_cursor = 0;
-                    EditField::Description
+                    EditField::Ticket
                 }
-                EditField::Description => {
+                EditField::Ticket => {
                     self.input_buffer = record.name.clone();
                     self.time_cursor = 0;
                     EditField::Name
@@ -248,7 +253,7 @@ impl AppState {
 
     pub fn handle_char_input(&mut self, c: char) {
         match self.edit_field {
-            EditField::Name | EditField::Description => {
+            EditField::Name | EditField::Ticket => {
                 self.input_buffer.push(c);
             }
             EditField::Start | EditField::End => {
@@ -281,7 +286,7 @@ impl AppState {
 
     pub fn handle_backspace(&mut self) {
         match self.edit_field {
-            EditField::Name | EditField::Description => {
+            EditField::Name | EditField::Ticket => {
                 self.input_buffer.pop();
             }
             EditField::Start | EditField::End => {
@@ -319,8 +324,13 @@ impl AppState {
                             .map_err(|_| "Invalid end time format (use HH:MM)".to_string())?;
                         record_mut.update_duration();
                     }
-                    EditField::Description => {
-                        record_mut.description = self.input_buffer.trim().to_string();
+                    EditField::Ticket => {
+                        let ticket_input = self.input_buffer.trim().to_string();
+                        record_mut.ticket = if ticket_input.is_empty() {
+                            None
+                        } else {
+                            Some(ticket_input)
+                        };
                     }
                 }
             }
@@ -410,10 +420,10 @@ impl AppState {
 
     pub fn move_field_left(&mut self) {
         self.edit_field = match self.edit_field {
-            EditField::Name => EditField::Description,
+            EditField::Name => EditField::Ticket,
             EditField::Start => EditField::Name,
             EditField::End => EditField::Start,
-            EditField::Description => EditField::End,
+            EditField::Ticket => EditField::End,
         };
     }
 
@@ -421,8 +431,8 @@ impl AppState {
         self.edit_field = match self.edit_field {
             EditField::Name => EditField::Start,
             EditField::Start => EditField::End,
-            EditField::End => EditField::Description,
-            EditField::Description => EditField::Name,
+            EditField::End => EditField::Ticket,
+            EditField::Ticket => EditField::Name,
         };
     }
 
@@ -742,6 +752,57 @@ impl AppState {
         self.current_date = self.calendar_selected_date;
         self.date_changed = true;
         self.close_calendar();
+    }
+
+    pub fn open_ticket_in_browser(&mut self) {
+        use crate::integrations::{build_url, detect_tracker_type};
+        use std::process::Command;
+
+        if let Some(record) = self.get_selected_record() {
+            if let Some(ref ticket) = record.ticket {
+                if let Some(tracker) = detect_tracker_type(ticket, &self.config) {
+                    match build_url(ticket, tracker, &self.config, false) {
+                        Ok(url) => {
+                            // Use open command on macOS/Linux or start on Windows
+                            let result = if cfg!(target_os = "windows") {
+                                Command::new("cmd")
+                                    .args(&["/C", "start", &url])
+                                    .output()
+                            } else if cfg!(target_os = "macos") {
+                                Command::new("open")
+                                    .arg(&url)
+                                    .output()
+                            } else {
+                                // Linux/Unix
+                                Command::new("xdg-open")
+                                    .arg(&url)
+                                    .output()
+                            };
+
+                            match result {
+                                Ok(_) => {
+                                    self.last_error_message = None;
+                                }
+                                Err(e) => {
+                                    self.last_error_message =
+                                        Some(format!("Failed to open browser: {}", e));
+                                }
+                            }
+                        }
+                        Err(e) => {
+                            self.last_error_message = Some(format!("Failed to build URL: {}", e));
+                        }
+                    }
+                } else {
+                    self.last_error_message =
+                        Some("Could not detect tracker type for this ticket".to_string());
+                }
+            } else {
+                self.last_error_message = Some("No ticket assigned to this task".to_string());
+            }
+        } else {
+            self.last_error_message = Some("No task selected".to_string());
+        }
     }
 }
 

@@ -16,6 +16,7 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 - **Undo/Redo**: Recover from mistakes with `u` / `r` keybinds (max 50 levels)
 - **Auto-save**: Automatically saves changes on quit and when switching days
 - **Persistent Storage**: JSON file per day in `~/.local/share/work-tuimer/` (or `./data/` fallback)
+- **JIRA/Linear Integration**: Open issue tracker links directly from tasks with `Shift+J` keybind
 - **Switch days and even whole months** via `[` and `]` keybind (+ "C" (capital c) for running calendar)
 
 ## Installation
@@ -78,7 +79,7 @@ cargo build --release
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Next field (Name → Start → End → Name) |
+| `Tab` | Next field (Name → Start → End → Ticket → Name) |
 | `Enter` | Save changes and exit edit mode |
 | `Esc` | Cancel and exit edit mode |
 | `Backspace` | Delete character |
@@ -106,6 +107,41 @@ cargo build --release
 | `Enter` | Jump to selected date |
 | `Esc` | Close calendar view |
 
+## JIRA/Linear Integration
+
+WorkTimer can open issue tracker tickets directly in your browser using the `Shift+J` keybind. This feature supports both JIRA and Linear issue trackers.
+
+### Configuration
+
+Create or edit `~/.config/work-tuimer/config.toml` to configure your trackers:
+
+```toml
+[jira]
+base_url = "https://your-company.atlassian.net"
+project_prefix = "YOUR"
+
+[linear]
+base_url = "https://linear.app"
+team_key = "YOUR"
+```
+
+### Default Configuration
+
+By default, the configuration points to a JIRA instance at `your-company.atlassian.net` as an example. Replace this with your actual JIRA URL and project prefix to start using the feature.
+
+### Usage
+
+1. **Add a ticket to a task**: While editing a task (press `Enter` to enter edit mode), press `Tab` to cycle to the Ticket field and enter your ticket ID (e.g., `PROJ-123` or `LIN-456`).
+
+2. **Open in browser**: Select a task with a ticket and press `Shift+J`. The ticket will open in your default browser.
+
+3. **Automatic ticket detection**: WorkTimer automatically detects whether a ticket is from JIRA (e.g., `WL-1`) or Linear (e.g., `LIN-123`) based on the ticket pattern.
+
+### Supported Formats
+
+- **JIRA**: `PROJECT-123` (e.g., `WL-1`, `PROJ-456`)
+- **Linear**: `LIN-123`, `TEAM-123` (e.g., `LIN-1`, `ENG-99`)
+
 ## Data Format
 
 Data is stored per day in JSON format:
@@ -118,7 +154,8 @@ Data is stored per day in JSON format:
       "id": 1,
       "name": "Task name",
       "start": "09:00",
-      "end": "12:00"
+      "end": "12:00",
+      "ticket": "WL-1"
     }
   ]
 }
