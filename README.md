@@ -17,7 +17,7 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 - **Auto-save**: Automatically saves changes on quit and when switching days
 - **Persistent Storage**: JSON file per day in `~/.local/share/work-tuimer/` (or `./data/` fallback)
 - **Switch days and even whole months** via `[` and `]` keybind (+ "C" (capital c) for running calendar)
-- **Issue Tracker Integration**: Automatic ticket detection (JIRA/Linear) from task names with browser shortcuts
+- **Issue Tracker Integration**: Automatic ticket detection from task names with browser shortcuts (supports JIRA, Linear, GitHub, GitLab, and any custom tracker)
 
 ## Installation
 
@@ -108,72 +108,80 @@ cargo build --release
 | `Enter` | Jump to selected date |
 | `Esc` | Close calendar view |
 
-## JIRA/Linear Integration (Optional)
+## Issue Tracker Integration (Optional)
 
-WorkTimer supports automatic ticket detection from task names and browser integration for JIRA and Linear issue trackers. **This feature is completely optional** - the application works perfectly without any configuration.
+WorkTimer supports automatic ticket detection from task names and browser integration for **any** issue tracker (JIRA, Linear, GitHub Issues, GitLab, Azure DevOps, etc.). **This feature is completely optional** - the application works perfectly without any configuration.
 
 ### Setup
 
 **Note**: If you don't create a config file, the integration feature will be hidden (no `T` keybinding, no ticket badges). The app works perfectly without it.
 
-To enable the integration, create a configuration file at `~/.config/work-tuimer/config.toml`:
+To enable the integration, create a configuration file at `~/.config/work-tuimer/config.toml`. You can configure multiple trackers with custom names:
 
-**For JIRA:**
+**Example: JIRA tracker**
 
 ```toml
 [integrations]
-default_tracker = "jira"  # Default when pattern is ambiguous
+default_tracker = "my-jira"  # Default tracker when pattern is ambiguous
 
-[integrations.jira]
+[integrations.trackers.my-jira]
 enabled = true
 base_url = "https://your-company.atlassian.net"
-ticket_patterns = ["^[A-Z]+-\\d+$"]  # Regex to match your tickets
+ticket_patterns = ["^PROJ-\\d+$", "^WORK-\\d+$"]  # Regex to match your tickets
 browse_url = "{base_url}/browse/{ticket}"
 worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
 ```
 
-**For Linear:**
+**Example: GitHub Issues tracker**
 
 ```toml
 [integrations]
-default_tracker = "linear"
+default_tracker = "github"
 
-[integrations.linear]
+[integrations.trackers.github]
 enabled = true
-base_url = "https://linear.app/your-team"
-ticket_patterns = ["^[A-Z]+-\\d+$"]  # Regex to match your tickets  
-browse_url = "{base_url}/issue/{ticket}"
-worklog_url = ""  # Linear doesn't have worklogs
+base_url = "https://github.com/yourorg/yourrepo"
+ticket_patterns = ["^#\\d+$"]  # Matches #123
+browse_url = "{base_url}/issues/{ticket}"
+worklog_url = ""  # GitHub doesn't have worklogs
 ```
 
-**For Both (JIRA + Linear):**
+**Example: Multiple trackers (JIRA + Linear + GitHub)**
 
 ```toml
 [integrations]
-default_tracker = "jira"  # Fallback when patterns overlap
+default_tracker = "work-jira"  # Fallback when patterns overlap
 
-[integrations.jira]
+[integrations.trackers.work-jira]
 enabled = true
-base_url = "https://your-company.atlassian.net"
-ticket_patterns = ["^PROJ-\\d+$", "^WORK-\\d+$"]  # Specific project patterns
+base_url = "https://company.atlassian.net"
+ticket_patterns = ["^PROJ-\\d+$", "^WORK-\\d+$"]  # Company JIRA projects
 browse_url = "{base_url}/browse/{ticket}"
 worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
 
-[integrations.linear]
+[integrations.trackers.team-linear]
 enabled = true
 base_url = "https://linear.app/your-team"
-ticket_patterns = ["^ENG-\\d+$", "^DESIGN-\\d+$"]  # Your Linear team patterns
+ticket_patterns = ["^ENG-\\d+$", "^DESIGN-\\d+$"]  # Linear team patterns
 browse_url = "{base_url}/issue/{ticket}"
+worklog_url = ""
+
+[integrations.trackers.oss-github]
+enabled = true
+base_url = "https://github.com/myorg/myrepo"
+ticket_patterns = ["^#\\d+$"]  # GitHub issue numbers
+browse_url = "{base_url}/issues/{ticket}"
 worklog_url = ""
 ```
 
-The app will automatically detect which tracker to use based on the `ticket_patterns` regex. If a ticket matches multiple patterns, it uses the `default_tracker`.
+The app will automatically detect which tracker to use based on the `ticket_patterns` regex. If a ticket matches multiple patterns, it uses the `default_tracker`. You can name your trackers anything you want (e.g., `work-jira`, `my-company-tracker`, `team-issues`).
 
 ### Usage
 
 1. **Include ticket IDs in task names**: When creating or editing tasks, include the ticket ID in the name:
    - JIRA: `"PROJ-123: Fix login bug"`
    - Linear: `"ENG-456: Add dark mode"`
+   - GitHub: `"#789: Update documentation"`
 
 2. **Visual indicator**: Tasks with detected tickets show a badge: `📋 Task Name [PROJ-123]`
 
@@ -181,9 +189,12 @@ The app will automatically detect which tracker to use based on the `ticket_patt
 
 ### Ticket Detection
 
-- **JIRA pattern**: 2-10 uppercase letters + hyphen + numbers (e.g., `PROJ-123`, `WL-42`)
-- **Linear pattern**: Same format (e.g., `ENG-456`, `DESIGN-12`)
-- Tickets are detected automatically from task names at runtime (no data model changes)
+The system uses regex patterns defined in `ticket_patterns` to detect ticket IDs from task names. Common patterns:
+- **JIRA/Linear**: `^[A-Z]+-\\d+$` matches `PROJ-123`, `ENG-456`
+- **GitHub Issues**: `^#\\d+$` matches `#123`, `#456`
+- **Custom**: Define any regex pattern that matches your tracker's ticket format
+
+Tickets are detected automatically from task names at runtime (no data model changes required).
 
 ### Supported Platforms
 

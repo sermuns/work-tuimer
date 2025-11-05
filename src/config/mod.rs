@@ -1,28 +1,25 @@
 use anyhow::{Context, Result};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::fs;
 use std::path::PathBuf;
 
-/// Configuration for issue tracker integrations (JIRA, Linear, etc.)
+/// Configuration for issue tracker integrations (JIRA, Linear, GitHub, etc.)
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct Config {
     #[serde(default)]
     pub integrations: IntegrationConfig,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct IntegrationConfig {
-    /// Default tracker type when auto-detection is ambiguous
-    #[serde(default = "default_tracker")]
-    pub default_tracker: String,
-
-    /// JIRA configuration
+    /// Default tracker name when auto-detection is ambiguous
     #[serde(default)]
-    pub jira: TrackerConfig,
+    pub default_tracker: Option<String>,
 
-    /// Linear configuration
+    /// Map of tracker name to tracker configuration
     #[serde(default)]
-    pub linear: TrackerConfig,
+    pub trackers: HashMap<String, TrackerConfig>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -40,20 +37,6 @@ pub struct TrackerConfig {
     /// URL template for worklog page: {base_url}, {ticket}
     #[serde(default)]
     pub worklog_url: String,
-}
-
-impl Default for IntegrationConfig {
-    fn default() -> Self {
-        Self {
-            default_tracker: "jira".to_string(),
-            jira: TrackerConfig::default(),
-            linear: TrackerConfig::default(),
-        }
-    }
-}
-
-fn default_tracker() -> String {
-    "jira".to_string()
 }
 
 impl Config {
@@ -83,8 +66,9 @@ impl Config {
 
     /// Check if any tracker integration is properly configured
     pub fn has_integrations(&self) -> bool {
-        (self.integrations.jira.enabled && !self.integrations.jira.base_url.is_empty())
-            || (self.integrations.linear.enabled && !self.integrations.linear.base_url.is_empty())
+        self.integrations.trackers.values().any(|tracker| {
+            tracker.enabled && !tracker.base_url.is_empty()
+        })
     }
 }
 
@@ -95,25 +79,24 @@ mod tests {
     #[test]
     fn test_default_config() {
         let config = Config::default();
-        assert_eq!(config.integrations.default_tracker, "jira");
-        assert!(!config.integrations.jira.enabled);
-        assert_eq!(config.integrations.jira.base_url, "");
+        assert_eq!(config.integrations.default_tracker, None);
+        assert!(config.integrations.trackers.is_empty());
     }
 
     #[test]
     fn test_config_serialization() {
         let config = Config::default();
         let toml_str = toml::to_string_pretty(&config).expect("Failed to serialize");
-        assert!(toml_str.contains("jira"));
+        assert!(toml_str.contains("integrations"));
     }
 
     #[test]
     fn test_config_deserialization() {
         let toml_str = r#"
 [integrations]
-default_tracker = "jira"
+default_tracker = "my-jira"
 
-[integrations.jira]
+[integrations.trackers.my-jira]
 enabled = true
 base_url = "https://test.atlassian.net"
 ticket_patterns = ["^PROJ-\\d+$"]
@@ -122,11 +105,10 @@ worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to deserialize");
-        assert_eq!(
-            config.integrations.jira.base_url,
-            "https://test.atlassian.net"
-        );
-        assert_eq!(config.integrations.jira.ticket_patterns[0], "^PROJ-\\d+$");
+        assert_eq!(config.integrations.default_tracker, Some("my-jira".to_string()));
+        let tracker = config.integrations.trackers.get("my-jira").unwrap();
+        assert_eq!(tracker.base_url, "https://test.atlassian.net");
+        assert_eq!(tracker.ticket_patterns[0], "^PROJ-\\d+$");
     }
 
     #[test]

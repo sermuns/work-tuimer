@@ -2,12 +2,6 @@ use crate::config::Config;
 use anyhow::Result;
 use regex::Regex;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TrackerType {
-    Jira,
-    Linear,
-}
-
 /// Extract ticket ID from task name using regex pattern: "PROJ-123 - Task name" -> "PROJ-123"
 pub fn extract_ticket_from_name(name: &str) -> Option<String> {
     // Match common ticket patterns: WORD-NUMBER (e.g., PROJ-123, WL-1, LIN-456)
@@ -18,26 +12,18 @@ pub fn extract_ticket_from_name(name: &str) -> Option<String> {
         .map(|m| m.as_str().to_string())
 }
 
-/// Detect which tracker type a ticket belongs to based on config patterns
-pub fn detect_tracker_type(ticket: &str, config: &Config) -> Option<TrackerType> {
-    let jira_config = &config.integrations.jira;
-    let linear_config = &config.integrations.linear;
-
-    // Try JIRA patterns first
-    if jira_config.enabled && matches_patterns(ticket, &jira_config.ticket_patterns) {
-        return Some(TrackerType::Jira);
+/// Detect which tracker a ticket belongs to based on config patterns
+/// Returns the tracker name if a match is found
+pub fn detect_tracker(ticket: &str, config: &Config) -> Option<String> {
+    // Try each enabled tracker's patterns
+    for (name, tracker_config) in &config.integrations.trackers {
+        if tracker_config.enabled && matches_patterns(ticket, &tracker_config.ticket_patterns) {
+            return Some(name.clone());
+        }
     }
 
-    // Try Linear patterns
-    if linear_config.enabled && matches_patterns(ticket, &linear_config.ticket_patterns) {
-        return Some(TrackerType::Linear);
-    }
-
-    // Fallback to default if ambiguous
-    match config.integrations.default_tracker.as_str() {
-        "linear" => Some(TrackerType::Linear),
-        _ => Some(TrackerType::Jira),
-    }
+    // Fallback to default tracker if configured
+    config.integrations.default_tracker.clone()
 }
 
 /// Check if ticket matches any of the provided patterns
@@ -50,20 +36,21 @@ fn matches_patterns(ticket: &str, patterns: &[String]) -> bool {
     })
 }
 
-/// Build a URL for the given ticket and tracker type
+/// Build a URL for the given ticket and tracker name
 pub fn build_url(
     ticket: &str,
-    tracker: TrackerType,
+    tracker_name: &str,
     config: &Config,
     for_worklog: bool,
 ) -> Result<String> {
-    let tracker_config = match tracker {
-        TrackerType::Jira => &config.integrations.jira,
-        TrackerType::Linear => &config.integrations.linear,
-    };
+    let tracker_config = config
+        .integrations
+        .trackers
+        .get(tracker_name)
+        .ok_or_else(|| anyhow::anyhow!("Tracker '{}' not found in config", tracker_name))?;
 
     if !tracker_config.enabled {
-        anyhow::bail!("Tracker is not enabled in config");
+        anyhow::bail!("Tracker '{}' is not enabled in config", tracker_name);
     }
 
     let template = if for_worklog && !tracker_config.worklog_url.is_empty() {
@@ -133,34 +120,79 @@ mod tests {
     }
 
     #[test]
-    fn test_detect_tracker_jira() {
-        let config = Config::default();
-        let tracker = detect_tracker_type("PROJ-123", &config);
-        assert_eq!(tracker, Some(TrackerType::Jira));
-    }
+    fn test_detect_tracker_by_pattern() {
+        let toml_str = r#"
+[integrations]
+default_tracker = "my-jira"
 
-    #[test]
-    fn test_detect_tracker_wl() {
-        let config = Config::default();
-        let tracker = detect_tracker_type("WL-1", &config);
-        assert_eq!(tracker, Some(TrackerType::Jira)); // WL matches JIRA pattern
+[integrations.trackers.my-jira]
+enabled = true
+base_url = "https://test.atlassian.net"
+ticket_patterns = ["^PROJ-\\d+$", "^WL-\\d+$"]
+browse_url = "{base_url}/browse/{ticket}"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        
+        let tracker = detect_tracker("PROJ-123", &config);
+        assert_eq!(tracker, Some("my-jira".to_string()));
+        
+        let tracker = detect_tracker("WL-1", &config);
+        assert_eq!(tracker, Some("my-jira".to_string()));
     }
 
     #[test]
     fn test_detect_tracker_default_fallback() {
-        let config = Config::default();
-        let tracker = detect_tracker_type("UNKNOWN-999", &config);
-        assert_eq!(tracker, Some(TrackerType::Jira)); // Falls back to default
+        let toml_str = r#"
+[integrations]
+default_tracker = "my-jira"
+
+[integrations.trackers.my-jira]
+enabled = true
+base_url = "https://test.atlassian.net"
+ticket_patterns = ["^PROJ-\\d+$"]
+browse_url = "{base_url}/browse/{ticket}"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        
+        // UNKNOWN-999 doesn't match pattern, falls back to default
+        let tracker = detect_tracker("UNKNOWN-999", &config);
+        assert_eq!(tracker, Some("my-jira".to_string()));
     }
 
     #[test]
-    fn test_build_url_jira_browse() {
-        // Config with enabled JIRA integration
+    fn test_detect_tracker_multiple_trackers() {
         let toml_str = r#"
 [integrations]
-default_tracker = "jira"
+default_tracker = "my-jira"
 
-[integrations.jira]
+[integrations.trackers.my-jira]
+enabled = true
+base_url = "https://test.atlassian.net"
+ticket_patterns = ["^PROJ-\\d+$"]
+browse_url = "{base_url}/browse/{ticket}"
+
+[integrations.trackers.github]
+enabled = true
+base_url = "https://github.com/user/repo"
+ticket_patterns = ["^#\\d+$"]
+browse_url = "{base_url}/issues/{ticket}"
+        "#;
+        let config: Config = toml::from_str(toml_str).unwrap();
+        
+        let tracker = detect_tracker("PROJ-123", &config);
+        assert_eq!(tracker, Some("my-jira".to_string()));
+        
+        let tracker = detect_tracker("#456", &config);
+        assert_eq!(tracker, Some("github".to_string()));
+    }
+
+    #[test]
+    fn test_build_url_browse() {
+        let toml_str = r#"
+[integrations]
+default_tracker = "my-jira"
+
+[integrations.trackers.my-jira]
 enabled = true
 base_url = "https://test.atlassian.net"
 ticket_patterns = ["^[A-Z]+-\\d+$"]
@@ -168,19 +200,18 @@ browse_url = "{base_url}/browse/{ticket}"
 worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        let url = build_url("WL-1", TrackerType::Jira, &config, false);
+        let url = build_url("WL-1", "my-jira", &config, false);
         assert!(url.is_ok());
         assert_eq!(url.unwrap(), "https://test.atlassian.net/browse/WL-1");
     }
 
     #[test]
-    fn test_build_url_jira_worklog() {
-        // Config with enabled JIRA integration
+    fn test_build_url_worklog() {
         let toml_str = r#"
 [integrations]
-default_tracker = "jira"
+default_tracker = "my-jira"
 
-[integrations.jira]
+[integrations.trackers.my-jira]
 enabled = true
 base_url = "https://test.atlassian.net"
 ticket_patterns = ["^[A-Z]+-\\d+$"]
@@ -188,7 +219,7 @@ browse_url = "{base_url}/browse/{ticket}"
 worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        let url = build_url("WL-1", TrackerType::Jira, &config, true);
+        let url = build_url("WL-1", "my-jira", &config, true);
         assert!(url.is_ok());
         assert_eq!(
             url.unwrap(),
@@ -197,22 +228,22 @@ worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
     }
 
     #[test]
-    fn test_build_url_with_custom_config() {
+    fn test_build_url_github() {
         let toml_str = r#"
 [integrations]
-default_tracker = "jira"
 
-[integrations.jira]
+[integrations.trackers.github]
 enabled = true
-base_url = "https://custom.atlassian.net"
-ticket_patterns = ["^PROJ-\\d+$"]
-browse_url = "{base_url}/browse/{ticket}"
+base_url = "https://github.com/user/repo"
+ticket_patterns = ["^#\\d+$"]
+browse_url = "{base_url}/issues/{ticket}"
+worklog_url = ""
         "#;
 
-        let config: crate::config::Config = toml::from_str(toml_str).unwrap();
-        let url = build_url("PROJ-456", TrackerType::Jira, &config, false);
+        let config: Config = toml::from_str(toml_str).unwrap();
+        let url = build_url("#456", "github", &config, false);
         assert!(url.is_ok());
-        assert_eq!(url.unwrap(), "https://custom.atlassian.net/browse/PROJ-456");
+        assert_eq!(url.unwrap(), "https://github.com/user/repo/issues/#456");
     }
 
     #[test]
