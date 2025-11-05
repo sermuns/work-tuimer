@@ -52,3 +52,5 @@ jobs:
         with:
           files: target/${{ matrix.target }}/release/${{ matrix.artifact_name }}
           tag_name: ${{ github.ref_name }}
+          draft: false
+          generate_release_notes: true
