@@ -8,15 +8,6 @@ pub enum TrackerType {
     Linear,
 }
 
-impl TrackerType {
-    pub fn as_str(&self) -> &'static str {
-        match self {
-            TrackerType::Jira => "jira",
-            TrackerType::Linear => "linear",
-        }
-    }
-}
-
 /// Extract ticket ID from task name using regex pattern: "PROJ-123 - Task name" -> "PROJ-123"
 pub fn extract_ticket_from_name(name: &str) -> Option<String> {
     // Match common ticket patterns: WORD-NUMBER (e.g., PROJ-123, WL-1, LIN-456)
@@ -60,7 +51,12 @@ fn matches_patterns(ticket: &str, patterns: &[String]) -> bool {
 }
 
 /// Build a URL for the given ticket and tracker type
-pub fn build_url(ticket: &str, tracker: TrackerType, config: &Config, for_worklog: bool) -> Result<String> {
+pub fn build_url(
+    ticket: &str,
+    tracker: TrackerType,
+    config: &Config,
+    for_worklog: bool,
+) -> Result<String> {
     let tracker_config = match tracker {
         TrackerType::Jira => &config.integrations.jira,
         TrackerType::Linear => &config.integrations.linear,
@@ -195,10 +191,7 @@ browse_url = "{base_url}/browse/{ticket}"
         let config: crate::config::Config = toml::from_str(toml_str).unwrap();
         let url = build_url("PROJ-456", TrackerType::Jira, &config, false);
         assert!(url.is_ok());
-        assert_eq!(
-            url.unwrap(),
-            "https://custom.atlassian.net/browse/PROJ-456"
-        );
+        assert_eq!(url.unwrap(), "https://custom.atlassian.net/browse/PROJ-456");
     }
 
     #[test]

@@ -6,7 +6,7 @@ mod ui;
 
 use anyhow::Result;
 use crossterm::{
-    event::{self, Event, KeyCode, KeyEvent, KeyEventKind, KeyModifiers},
+    event::{self, Event, KeyCode, KeyEvent, KeyEventKind},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
@@ -74,7 +74,7 @@ fn run_app<B: ratatui::backend::Backend>(
 fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storage) {
     // Clear any previous error messages on new key press
     app.clear_error();
-    
+
     match app.mode {
         ui::AppMode::Browse => match key.code {
             KeyCode::Char('q') => app.should_quit = true,

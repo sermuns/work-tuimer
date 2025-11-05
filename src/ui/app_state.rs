@@ -770,7 +770,8 @@ impl AppState {
                             };
 
                             if let Err(e) = result {
-                                self.last_error_message = Some(format!("Failed to open browser: {}", e));
+                                self.last_error_message =
+                                    Some(format!("Failed to open browser: {}", e));
                             }
                         }
                         Err(e) => {
@@ -778,7 +779,8 @@ impl AppState {
                         }
                     }
                 } else {
-                    self.last_error_message = Some("Could not detect tracker type for ticket".to_string());
+                    self.last_error_message =
+                        Some("Could not detect tracker type for ticket".to_string());
                 }
             } else {
                 self.last_error_message = Some("No ticket found in task name".to_string());
@@ -789,7 +791,6 @@ impl AppState {
     pub fn clear_error(&mut self) {
         self.last_error_message = None;
     }
-
 }
 
 fn days_in_month(month: time::Month, year: i32) -> u8 {

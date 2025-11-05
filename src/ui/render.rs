@@ -166,7 +166,9 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                 match app.edit_field {
                     crate::ui::EditField::Name => {
                         // Extract and display ticket badge if present
-                        let display = if let Some(ticket) = crate::integrations::extract_ticket_from_name(&app.input_buffer) {
+                        let display = if let Some(ticket) =
+                            crate::integrations::extract_ticket_from_name(&app.input_buffer)
+                        {
                             format!("{} {} [{}]", icon, app.input_buffer, ticket)
                         } else {
                             format!("{} {}", icon, app.input_buffer)
@@ -180,7 +182,9 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     }
                     crate::ui::EditField::Description => {
                         // Extract and display ticket badge if present
-                        let display = if let Some(ticket) = crate::integrations::extract_ticket_from_name(&record.name) {
+                        let display = if let Some(ticket) =
+                            crate::integrations::extract_ticket_from_name(&record.name)
+                        {
                             format!("{} {} [{}]", icon, record.name, ticket)
                         } else {
                             format!("{} {}", icon, record.name)
@@ -214,7 +218,9 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                         }
 
                         // Extract and display ticket badge if present
-                        let name_with_badge = if let Some(ticket) = crate::integrations::extract_ticket_from_name(&record.name) {
+                        let name_with_badge = if let Some(ticket) =
+                            crate::integrations::extract_ticket_from_name(&record.name)
+                        {
                             format!("{} {} [{}]", icon, record.name, ticket)
                         } else {
                             format!("{} {}", icon, record.name)
@@ -239,7 +245,9 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                 }
             } else {
                 // Extract and display ticket badge if present (non-editing mode)
-                let name_with_badge = if let Some(ticket) = crate::integrations::extract_ticket_from_name(&record.name) {
+                let name_with_badge = if let Some(ticket) =
+                    crate::integrations::extract_ticket_from_name(&record.name)
+                {
                     format!("{} {} [{}]", icon, record.name, ticket)
                 } else {
                     format!("{} {}", icon, record.name)
@@ -338,14 +346,14 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             Constraint::Percentage(30),
         ],
     )
-     .header(
-         Row::new(vec![
-             Cell::from("📝 Task Name"),
-             Cell::from("🕐 Start"),
-             Cell::from("🕐 End"),
-             Cell::from("⏱  Duration"),
-             Cell::from("📄 Description"),
-         ])
+    .header(
+        Row::new(vec![
+            Cell::from("📝 Task Name"),
+            Cell::from("🕐 Start"),
+            Cell::from("🕐 End"),
+            Cell::from("⏱  Duration"),
+            Cell::from("📄 Description"),
+        ])
         .style(
             Style::default()
                 .fg(Color::Rgb(255, 215, 0)) // Gold color
@@ -456,11 +464,11 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
 
 fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
     let (help_text, mode_color, mode_label) = match app.mode {
-         crate::ui::AppMode::Browse => (
-             "↑/↓: Row | ←/→: Field | [/]: Day | C: Calendar | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | t: Now | T: Ticket | ?: Help | q: Quit",
-             Color::Cyan,
-             "BROWSE",
-         ),
+        crate::ui::AppMode::Browse => (
+            "↑/↓: Row | ←/→: Field | [/]: Day | C: Calendar | Enter: Edit | c: Change | n: New | b: Break | d: Delete | v: Visual | t: Now | T: Ticket | ?: Help | q: Quit",
+            Color::Cyan,
+            "BROWSE",
+        ),
         crate::ui::AppMode::Edit => (
             "Tab: Next field | Enter: Save | Esc: Cancel",
             Color::Yellow,
@@ -909,8 +917,8 @@ fn is_leap_year_render(year: i32) -> bool {
 }
 
 fn render_error_modal(frame: &mut Frame, app: &AppState) {
-    use ratatui::widgets::Clear;
     use ratatui::text::Line;
+    use ratatui::widgets::Clear;
 
     // Create a centered modal
     let area = frame.size();
@@ -953,21 +961,15 @@ fn render_error_modal(frame: &mut Frame, app: &AppState) {
         Line::from(""),
     ];
 
-    let error_msg = Paragraph::new(lines)
-        .alignment(Alignment::Left)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_type(BorderType::Rounded)
-                .border_style(Style::default().fg(Color::Red))
-                .title("❌ ERROR")
-                .title_style(
-                    Style::default()
-                        .fg(Color::Red)
-                        .add_modifier(Modifier::BOLD),
-                )
-                .style(Style::default().bg(Color::Rgb(40, 20, 20))),
-        );
+    let error_msg = Paragraph::new(lines).alignment(Alignment::Left).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .border_style(Style::default().fg(Color::Red))
+            .title("❌ ERROR")
+            .title_style(Style::default().fg(Color::Red).add_modifier(Modifier::BOLD))
+            .style(Style::default().bg(Color::Rgb(40, 20, 20))),
+    );
 
     frame.render_widget(error_msg, chunks[0]);
 
