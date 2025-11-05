@@ -22,7 +22,7 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 
 ### Pre-built Binaries
 
-Download the latest pre-built binary for your platform from [GitHub Releases](https://github.com/sst/work-tuimer/releases):
+Download the latest pre-built binary for your platform from [GitHub Releases](https://github.com/Kamyil/work-tuimer/releases):
 
 - **Linux (x86_64)**: `work-tuimer-linux-x86_64`
 - **macOS (Intel)**: `work-tuimer-macos-x86_64`
