@@ -56,12 +56,35 @@ impl Config {
     }
 
     /// Get config file path (~/.config/work-tuimer/config.toml)
+    /// Respects XDG_CONFIG_HOME environment variable on Unix systems
     fn get_config_path() -> PathBuf {
-        if let Some(config_dir) = dirs::config_dir() {
-            config_dir.join("work-tuimer").join("config.toml")
-        } else {
-            PathBuf::from("./config.toml")
+        // On Unix systems (Linux/macOS), respect XDG_CONFIG_HOME
+        #[cfg(unix)]
+        {
+            if let Ok(xdg_config) = std::env::var("XDG_CONFIG_HOME") {
+                return PathBuf::from(xdg_config)
+                    .join("work-tuimer")
+                    .join("config.toml");
+            }
+            // Fall back to ~/.config if XDG_CONFIG_HOME is not set
+            if let Some(home) = std::env::var_os("HOME") {
+                return PathBuf::from(home)
+                    .join(".config")
+                    .join("work-tuimer")
+                    .join("config.toml");
+            }
         }
+
+        // On Windows, use dirs::config_dir() which returns AppData/Roaming
+        #[cfg(windows)]
+        {
+            if let Some(config_dir) = dirs::config_dir() {
+                return config_dir.join("work-tuimer").join("config.toml");
+            }
+        }
+
+        // Final fallback for any platform
+        PathBuf::from("./config.toml")
     }
 
     /// Check if any tracker integration is properly configured
