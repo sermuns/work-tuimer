@@ -62,7 +62,7 @@ cargo build --release
 | `→/l` | Move field right (Name → Start → End) |
 | `[` | Navigate to previous day (auto-saves) |
 | `]` | Navigate to next day (auto-saves) |
-| `Shift+C` | Open calendar view for date navigation |
+| `C` | Open calendar view for date navigation |
 | `Enter/i` | Enter edit mode on selected field |
 | `c` | Change task name (opens picker to select/filter/create) |
 | `n` | Add new work record |
