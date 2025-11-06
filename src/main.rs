@@ -152,8 +152,8 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
         },
         ui::AppMode::TaskPicker => match key.code {
             KeyCode::Esc => app.close_task_picker(),
-            KeyCode::Up | KeyCode::Char('k') => app.move_task_picker_up(),
-            KeyCode::Down | KeyCode::Char('j') => {
+            KeyCode::Up => app.move_task_picker_up(),
+            KeyCode::Down => {
                 let filtered_tasks = app.get_filtered_task_names();
                 app.move_task_picker_down(filtered_tasks.len());
             }

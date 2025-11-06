@@ -97,9 +97,9 @@ The task picker provides an intelligent way to change task names. Press `c` when
 
 | Key | Action |
 |-----|--------|
-| Any char | Type to filter tasks or create new name |
-| `↑/k` | Move selection up in filtered list |
-| `↓/j` | Move selection down in filtered list |
+| Any char | Type to filter tasks or create new name (including h/j/k/l) |
+| `↑` | Move selection up in filtered list |
+| `↓` | Move selection down in filtered list |
 | `Enter` | Select highlighted task or create typed name |
 | `Backspace` | Delete character from filter |
 | `Esc` | Cancel and return to browse mode |
