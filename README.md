@@ -17,6 +17,7 @@ A terminal user interface (TUI) for tracking work time entries with inline editi
 - **Auto-save**: Automatically saves changes on quit and when switching days
 - **Persistent Storage**: JSON file per day in `~/.local/share/work-tuimer/` (or `./data/` fallback)
 - **Switch days and even whole months** via `[` and `]` keybind (+ "C" (capital c) for running calendar)
+- **Issue Tracker Integration**: Automatic ticket detection from task names with browser shortcuts (supports JIRA, Linear, GitHub, GitLab, and any custom tracker)
 
 ## Installation
 
@@ -67,8 +68,10 @@ cargo build --release
 | `n` | Add new work record |
 | `b` | Add break (uses selected record's end time as start) |
 | `d` | Delete selected record |
-| `v` | Enter visual (select) mode |
+| `v` | Enter visual mode (multi-select) |
 | `t` | Set current time on selected field |
+| `T` | Open ticket in browser (only visible if config exists) |
+| `L` | Open worklog URL in browser (only visible if config exists) |
 | `u` | Undo last change |
 | `r` | Redo undone change |
 | `s` | Save to file |
@@ -78,7 +81,7 @@ cargo build --release
 
 | Key | Action |
 |-----|--------|
-| `Tab` | Next field (Name → Start → End → Name) |
+| `Tab` | Next field (Name → Start → End → Description → Name) |
 | `Enter` | Save changes and exit edit mode |
 | `Esc` | Cancel and exit edit mode |
 | `Backspace` | Delete character |
@@ -106,6 +109,36 @@ cargo build --release
 | `Enter` | Jump to selected date |
 | `Esc` | Close calendar view |
 
+## Issue Tracker Integration (Optional)
+
+WorkTimer supports automatic ticket detection from task names and browser integration for **any** issue tracker (JIRA, Linear, GitHub Issues, GitLab, Azure DevOps, etc.). 
+
+**This feature is completely optional** - the application works perfectly without any configuration.
+
+### Quick Start
+
+1. **Include ticket IDs in task names**: `"PROJ-123: Fix login bug"` or `"#456: Update docs"`
+2. **See the ticket badge**: Tasks with detected tickets show `🎫 Task Name [PROJ-123]`
+3. **Open in browser**: Press `T` to open the ticket or `L` to open the worklog
+
+### Configuration
+
+Create a config file at `~/.config/work-tuimer/config.toml`:
+
+```toml
+[integrations]
+default_tracker = "my-jira"
+
+[integrations.trackers.my-jira]
+enabled = true
+base_url = "https://your-company.atlassian.net"
+ticket_patterns = ["^PROJ-\\d+$", "^WORK-\\d+$"]
+browse_url = "{base_url}/browse/{ticket}"
+worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
+```
+
+**📖 For detailed documentation, configuration examples, and multiple tracker setup, see [Issue Tracker Integration Guide](docs/ISSUE_TRACKER_INTEGRATION.md)**
+
 ## Data Format
 
 Data is stored per day in JSON format:
@@ -118,7 +151,9 @@ Data is stored per day in JSON format:
       "id": 1,
       "name": "Task name",
       "start": "09:00",
-      "end": "12:00"
+      "end": "12:00",
+      "total_minutes": 180,
+      "description": "Optional description"
     }
   ]
 }

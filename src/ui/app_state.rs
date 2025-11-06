@@ -1,4 +1,5 @@
 use super::history::History;
+use crate::config::Config;
 use crate::models::{DayData, WorkRecord};
 use time::Date;
 
@@ -60,6 +61,8 @@ pub struct AppState {
     pub calendar_selected_date: Date,
     pub calendar_view_month: time::Month,
     pub calendar_view_year: i32,
+    pub config: Config,
+    pub last_error_message: Option<String>,
     history: History,
 }
 
@@ -162,6 +165,8 @@ impl AppState {
             command_palette_selected: 0,
             available_commands,
             date_changed: false,
+            config: Config::load().unwrap_or_default(),
+            last_error_message: None,
             history: History::new(),
         }
     }
@@ -742,6 +747,88 @@ impl AppState {
         self.current_date = self.calendar_selected_date;
         self.date_changed = true;
         self.close_calendar();
+    }
+
+    pub fn open_ticket_in_browser(&mut self) {
+        use crate::integrations::{build_url, detect_tracker, extract_ticket_from_name};
+
+        if let Some(record) = self.get_selected_record() {
+            if let Some(ticket_id) = extract_ticket_from_name(&record.name) {
+                if let Some(tracker_name) = detect_tracker(&ticket_id, &self.config) {
+                    match build_url(&ticket_id, &tracker_name, &self.config, false) {
+                        Ok(url) => {
+                            // Open browser using platform-specific command
+                            let result = if cfg!(target_os = "macos") {
+                                std::process::Command::new("open").arg(&url).spawn()
+                            } else if cfg!(target_os = "windows") {
+                                std::process::Command::new("cmd")
+                                    .args(["/C", "start", &url])
+                                    .spawn()
+                            } else {
+                                // Linux/Unix
+                                std::process::Command::new("xdg-open").arg(&url).spawn()
+                            };
+
+                            if let Err(e) = result {
+                                self.last_error_message =
+                                    Some(format!("Failed to open browser: {}", e));
+                            }
+                        }
+                        Err(e) => {
+                            self.last_error_message = Some(format!("Failed to build URL: {}", e));
+                        }
+                    }
+                } else {
+                    self.last_error_message =
+                        Some("Could not detect tracker for ticket".to_string());
+                }
+            } else {
+                self.last_error_message = Some("No ticket found in task name".to_string());
+            }
+        }
+    }
+
+    pub fn open_worklog_in_browser(&mut self) {
+        use crate::integrations::{build_url, detect_tracker, extract_ticket_from_name};
+
+        if let Some(record) = self.get_selected_record() {
+            if let Some(ticket_id) = extract_ticket_from_name(&record.name) {
+                if let Some(tracker_name) = detect_tracker(&ticket_id, &self.config) {
+                    match build_url(&ticket_id, &tracker_name, &self.config, true) {
+                        Ok(url) => {
+                            // Open browser using platform-specific command
+                            let result = if cfg!(target_os = "macos") {
+                                std::process::Command::new("open").arg(&url).spawn()
+                            } else if cfg!(target_os = "windows") {
+                                std::process::Command::new("cmd")
+                                    .args(["/C", "start", &url])
+                                    .spawn()
+                            } else {
+                                // Linux/Unix
+                                std::process::Command::new("xdg-open").arg(&url).spawn()
+                            };
+
+                            if let Err(e) = result {
+                                self.last_error_message =
+                                    Some(format!("Failed to open browser: {}", e));
+                            }
+                        }
+                        Err(e) => {
+                            self.last_error_message = Some(format!("Failed to build URL: {}", e));
+                        }
+                    }
+                } else {
+                    self.last_error_message =
+                        Some("Could not detect tracker for ticket".to_string());
+                }
+            } else {
+                self.last_error_message = Some("No ticket found in task name".to_string());
+            }
+        }
+    }
+
+    pub fn clear_error(&mut self) {
+        self.last_error_message = None;
     }
 }
 

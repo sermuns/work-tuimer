@@ -1,3 +1,5 @@
+mod config;
+mod integrations;
 mod models;
 mod storage;
 mod ui;
@@ -70,11 +72,16 @@ fn run_app<B: ratatui::backend::Backend>(
 }
 
 fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storage) {
+    // Clear any previous error messages on new key press
+    app.clear_error();
+
     match app.mode {
         ui::AppMode::Browse => match key.code {
             KeyCode::Char('q') => app.should_quit = true,
             KeyCode::Char('?') => app.open_command_palette(),
             KeyCode::Char('C') => app.open_calendar(),
+            KeyCode::Char('T') if app.config.has_integrations() => app.open_ticket_in_browser(),
+            KeyCode::Char('L') if app.config.has_integrations() => app.open_worklog_in_browser(),
             KeyCode::Up | KeyCode::Char('k') => app.move_selection_up(),
             KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
             KeyCode::Left | KeyCode::Char('h') => app.move_field_left(),
