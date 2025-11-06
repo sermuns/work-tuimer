@@ -492,7 +492,7 @@ fn render_footer(frame: &mut Frame, area: Rect, app: &AppState) {
         crate::ui::AppMode::Edit => (
             "Tab: Next field | Enter: Save | Esc: Cancel",
             Color::Yellow,
-            "EDIT"
+            "EDIT",
         ),
         crate::ui::AppMode::Visual => (
             "↑/↓: Extend selection | d: Delete | Esc: Exit visual",
@@ -1015,7 +1015,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
     // Create a smaller centered modal (mini-picker style)
     let area = frame.size();
     let width = area.width.min(60);
-    let height = (filtered_tasks.len() as u16 + 8).max(12).min(20); // Ensure minimum height for visibility
+    let height = (filtered_tasks.len() as u16 + 8).clamp(12, 20); // Ensure minimum height for visibility
     let x = (area.width.saturating_sub(width)) / 2;
     let y = (area.height.saturating_sub(height)) / 2;
 
@@ -1039,7 +1039,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
         .constraints([
             Constraint::Length(3), // Header
             Constraint::Length(4), // Input field (increased for better visibility)
-            Constraint::Min(5),     // List
+            Constraint::Min(5),    // List
         ])
         .split(modal_area);
 
@@ -1049,7 +1049,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
     } else {
         "Type to filter, or create new task"
     };
-    
+
     let header = Paragraph::new(header_text)
         .style(Style::default().fg(Color::White))
         .alignment(Alignment::Center)
@@ -1075,12 +1075,14 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
     } else {
         app.input_buffer.clone()
     };
-    
+
     let input = Paragraph::new(input_display)
         .style(if app.input_buffer.is_empty() {
             Style::default().fg(Color::DarkGray)
         } else {
-            Style::default().fg(Color::White).add_modifier(Modifier::BOLD)
+            Style::default()
+                .fg(Color::White)
+                .add_modifier(Modifier::BOLD)
         })
         .block(
             Block::default()
@@ -1109,18 +1111,27 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
             );
         frame.render_widget(empty_msg, chunks[2]);
     } else if filtered_tasks.is_empty() && !app.input_buffer.is_empty() {
-        let new_task_msg = Paragraph::new(format!("Press Enter to create: \"{}\"", app.input_buffer))
-            .style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
-            .alignment(Alignment::Center)
-            .block(
-                Block::default()
-                    .borders(Borders::ALL)
-                    .border_type(BorderType::Rounded)
-                    .border_style(Style::default().fg(Color::Green))
-                    .title("New Task")
-                    .title_style(Style::default().fg(Color::Green).add_modifier(Modifier::BOLD))
-                    .style(Style::default().bg(Color::Rgb(25, 38, 25))),
-            );
+        let new_task_msg =
+            Paragraph::new(format!("Press Enter to create: \"{}\"", app.input_buffer))
+                .style(
+                    Style::default()
+                        .fg(Color::Green)
+                        .add_modifier(Modifier::BOLD),
+                )
+                .alignment(Alignment::Center)
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .border_type(BorderType::Rounded)
+                        .border_style(Style::default().fg(Color::Green))
+                        .title("New Task")
+                        .title_style(
+                            Style::default()
+                                .fg(Color::Green)
+                                .add_modifier(Modifier::BOLD),
+                        )
+                        .style(Style::default().bg(Color::Rgb(25, 38, 25))),
+                );
         frame.render_widget(new_task_msg, chunks[2]);
     } else {
         let rows: Vec<Row> = filtered_tasks
@@ -1153,8 +1164,10 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
 
                 let display_name = format!("{} {}", icon, name);
 
-                Row::new(vec![Cell::from(display_name).style(Style::default().fg(Color::White))])
-                    .style(style)
+                Row::new(vec![
+                    Cell::from(display_name).style(Style::default().fg(Color::White)),
+                ])
+                .style(style)
             })
             .collect();
 

@@ -895,7 +895,7 @@ impl AppState {
 
     pub fn select_task_from_picker(&mut self) {
         let filtered_tasks = self.get_filtered_task_names();
-        
+
         if filtered_tasks.is_empty() {
             // No matches - use the typed input as-is (creating new task)
             // input_buffer already contains the typed text
@@ -903,18 +903,18 @@ impl AppState {
             // Select from filtered list
             self.input_buffer = selected_name.clone();
         }
-        
+
         // Save the task name and return to Browse mode
         if let Some(record) = self.get_selected_record() {
             let record_id = record.id;
             let new_name = self.input_buffer.trim().to_string();
-            
+
             self.save_snapshot();
             if let Some(work_record) = self.day_data.work_records.get_mut(&record_id) {
                 work_record.name = new_name;
             }
         }
-        
+
         self.input_buffer.clear();
         self.mode = AppMode::Browse;
     }
