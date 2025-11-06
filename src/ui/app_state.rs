@@ -788,6 +788,45 @@ impl AppState {
         }
     }
 
+    pub fn open_worklog_in_browser(&mut self) {
+        use crate::integrations::{build_url, detect_tracker, extract_ticket_from_name};
+
+        if let Some(record) = self.get_selected_record() {
+            if let Some(ticket_id) = extract_ticket_from_name(&record.name) {
+                if let Some(tracker_name) = detect_tracker(&ticket_id, &self.config) {
+                    match build_url(&ticket_id, &tracker_name, &self.config, true) {
+                        Ok(url) => {
+                            // Open browser using platform-specific command
+                            let result = if cfg!(target_os = "macos") {
+                                std::process::Command::new("open").arg(&url).spawn()
+                            } else if cfg!(target_os = "windows") {
+                                std::process::Command::new("cmd")
+                                    .args(["/C", "start", &url])
+                                    .spawn()
+                            } else {
+                                // Linux/Unix
+                                std::process::Command::new("xdg-open").arg(&url).spawn()
+                            };
+
+                            if let Err(e) = result {
+                                self.last_error_message =
+                                    Some(format!("Failed to open browser: {}", e));
+                            }
+                        }
+                        Err(e) => {
+                            self.last_error_message = Some(format!("Failed to build URL: {}", e));
+                        }
+                    }
+                } else {
+                    self.last_error_message =
+                        Some("Could not detect tracker for ticket".to_string());
+                }
+            } else {
+                self.last_error_message = Some("No ticket found in task name".to_string());
+            }
+        }
+    }
+
     pub fn clear_error(&mut self) {
         self.last_error_message = None;
     }

@@ -81,6 +81,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('?') => app.open_command_palette(),
             KeyCode::Char('C') => app.open_calendar(),
             KeyCode::Char('T') if app.config.has_integrations() => app.open_ticket_in_browser(),
+            KeyCode::Char('L') if app.config.has_integrations() => app.open_worklog_in_browser(),
             KeyCode::Up | KeyCode::Char('k') => app.move_selection_up(),
             KeyCode::Down | KeyCode::Char('j') => app.move_selection_down(),
             KeyCode::Left | KeyCode::Char('h') => app.move_field_left(),
