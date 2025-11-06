@@ -89,9 +89,10 @@ impl Config {
 
     /// Check if any tracker integration is properly configured
     pub fn has_integrations(&self) -> bool {
-        self.integrations.trackers.values().any(|tracker| {
-            tracker.enabled && !tracker.base_url.is_empty()
-        })
+        self.integrations
+            .trackers
+            .values()
+            .any(|tracker| tracker.enabled && !tracker.base_url.is_empty())
     }
 }
 
@@ -128,7 +129,10 @@ worklog_url = "{base_url}/browse/{ticket}?focusedWorklogId=-1"
         "#;
 
         let config: Config = toml::from_str(toml_str).expect("Failed to deserialize");
-        assert_eq!(config.integrations.default_tracker, Some("my-jira".to_string()));
+        assert_eq!(
+            config.integrations.default_tracker,
+            Some("my-jira".to_string())
+        );
         let tracker = config.integrations.trackers.get("my-jira").unwrap();
         assert_eq!(tracker.base_url, "https://test.atlassian.net");
         assert_eq!(tracker.ticket_patterns[0], "^PROJ-\\d+$");

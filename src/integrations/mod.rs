@@ -132,10 +132,10 @@ ticket_patterns = ["^PROJ-\\d+$", "^WL-\\d+$"]
 browse_url = "{base_url}/browse/{ticket}"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        
+
         let tracker = detect_tracker("PROJ-123", &config);
         assert_eq!(tracker, Some("my-jira".to_string()));
-        
+
         let tracker = detect_tracker("WL-1", &config);
         assert_eq!(tracker, Some("my-jira".to_string()));
     }
@@ -153,7 +153,7 @@ ticket_patterns = ["^PROJ-\\d+$"]
 browse_url = "{base_url}/browse/{ticket}"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        
+
         // UNKNOWN-999 doesn't match pattern, falls back to default
         let tracker = detect_tracker("UNKNOWN-999", &config);
         assert_eq!(tracker, Some("my-jira".to_string()));
@@ -178,10 +178,10 @@ ticket_patterns = ["^#\\d+$"]
 browse_url = "{base_url}/issues/{ticket}"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        
+
         let tracker = detect_tracker("PROJ-123", &config);
         assert_eq!(tracker, Some("my-jira".to_string()));
-        
+
         let tracker = detect_tracker("#456", &config);
         assert_eq!(tracker, Some("github".to_string()));
     }
@@ -206,16 +206,16 @@ ticket_patterns = ["^[A-Z]+-\\d+$"]
 browse_url = "{base_url}/issue/{ticket}"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        
+
         // PROJ-123 matches both patterns - should use whichever tracker appears first
         let tracker = detect_tracker("PROJ-123", &config);
         assert!(tracker.is_some());
-        
+
         // The result should be deterministic (either "jira" or "linear")
         // Note: HashMap iteration order is not guaranteed in Rust, but it should be consistent
         let tracker_name = tracker.unwrap();
         assert!(tracker_name == "jira" || tracker_name == "linear");
-        
+
         // Verify the same ticket always resolves to the same tracker
         let tracker2 = detect_tracker("PROJ-123", &config);
         assert_eq!(tracker2, Some(tracker_name));
@@ -234,7 +234,7 @@ ticket_patterns = ["^PROJ-\\d+$"]
 browse_url = "{base_url}/browse/{ticket}"
         "#;
         let config: Config = toml::from_str(toml_str).unwrap();
-        
+
         // UNKNOWN-999 doesn't match and there's no default_tracker
         let tracker = detect_tracker("UNKNOWN-999", &config);
         assert_eq!(tracker, None);

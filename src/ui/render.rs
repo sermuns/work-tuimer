@@ -167,7 +167,8 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     crate::ui::EditField::Name => {
                         // Extract and display ticket badge if present and config exists
                         let display = if app.config.has_integrations() {
-                            if crate::integrations::extract_ticket_from_name(&app.input_buffer).is_some()
+                            if crate::integrations::extract_ticket_from_name(&app.input_buffer)
+                                .is_some()
                             {
                                 format!("🎫 {} {}", icon, app.input_buffer)
                             } else {
