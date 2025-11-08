@@ -90,11 +90,14 @@ fn run_app<B: ratatui::backend::Backend>(
             continue; // Force redraw with new data before waiting for next event
         }
 
-        if let Event::Key(key) = event::read()?
+        // Poll for events with timeout to update timer display
+        if event::poll(std::time::Duration::from_millis(500))?
+            && let Event::Key(key) = event::read()?
             && key.kind == KeyEventKind::Press
         {
             handle_key_event(app, key, storage);
         }
+        // If no event (timeout), loop continues and redraws with updated timer
     }
 
     Ok(())
