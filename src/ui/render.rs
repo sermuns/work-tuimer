@@ -10,7 +10,7 @@ pub fn render(frame: &mut Frame, app: &AppState) {
     // Layout changes if timer is active: add timer bar at top
     let main_constraints = if app.active_timer.is_some() {
         vec![
-            Constraint::Length(1), // Timer bar
+            Constraint::Length(3), // Timer bar (needs 3 lines for borders + content)
             Constraint::Length(3), // Header
             Constraint::Min(10),   // Content
             Constraint::Length(3), // Footer
