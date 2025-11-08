@@ -75,6 +75,17 @@ impl Storage {
         Ok(())
     }
 
+    /// Get the modification time of a day data file
+    /// Returns None if the file doesn't exist
+    pub fn get_file_modified_time(&self, date: &Date) -> Option<std::time::SystemTime> {
+        let path = self.get_file_path(date);
+        if path.exists() {
+            fs::metadata(&path).ok().and_then(|m| m.modified().ok())
+        } else {
+            None
+        }
+    }
+
     /// Get the path to the running timer file
     fn get_timer_file_path(&self) -> PathBuf {
         self.data_dir.join("running_timer.json")

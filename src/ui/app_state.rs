@@ -69,6 +69,7 @@ pub struct AppState {
     pub last_error_message: Option<String>,
     pub task_picker_selected: usize,
     pub active_timer: Option<TimerState>,
+    pub last_file_modified: Option<std::time::SystemTime>,
     history: History,
 }
 
@@ -185,6 +186,7 @@ impl AppState {
             last_error_message: None,
             task_picker_selected: 0,
             active_timer: None,
+            last_file_modified: None,
             history: History::new(),
         }
     }
@@ -1040,6 +1042,36 @@ impl AppState {
     /// Get current status of active timer or None if no timer running
     pub fn get_timer_status(&self) -> Option<&TimerState> {
         self.active_timer.as_ref()
+    }
+
+    /// Check if the data file has been modified externally and reload if needed
+    /// Returns true if the file was reloaded
+    pub fn check_and_reload_if_modified(&mut self, storage: &crate::storage::Storage) -> bool {
+        let current_file_time = storage.get_file_modified_time(&self.current_date);
+        
+        // If we have a last_file_modified time and current file time, compare them
+        if let (Some(last), Some(current)) = (self.last_file_modified, current_file_time) {
+            if current > last {
+                // File has been modified externally, reload it
+                if let Ok(new_data) = storage.load(&self.current_date) {
+                    self.day_data = new_data;
+                    self.last_file_modified = Some(current);
+                    
+                    // Adjust selected_index if it's now out of bounds
+                    let record_count = self.day_data.work_records.len();
+                    if self.selected_index >= record_count && record_count > 0 {
+                        self.selected_index = record_count - 1;
+                    }
+                    
+                    return true;
+                }
+            }
+        } else if current_file_time.is_some() {
+            // First time checking, just store the modification time
+            self.last_file_modified = current_file_time;
+        }
+        
+        false
     }
 }
 

@@ -82,6 +82,7 @@ fn run_app<B: ratatui::backend::Backend>(
 
         if app.should_quit {
             storage.save(&app.day_data)?;
+            app.last_file_modified = storage.get_file_modified_time(&app.current_date);
             break;
         }
 
@@ -89,6 +90,7 @@ fn run_app<B: ratatui::backend::Backend>(
             storage.save(&app.day_data)?;
             let new_day_data = storage.load(&app.current_date)?;
             app.load_new_day_data(new_day_data);
+            app.last_file_modified = storage.get_file_modified_time(&app.current_date);
             continue; // Force redraw with new data before waiting for next event
         }
 
@@ -99,7 +101,11 @@ fn run_app<B: ratatui::backend::Backend>(
         {
             handle_key_event(app, key, storage);
         }
-        // If no event (timeout), loop continues and redraws with updated timer
+        // If no event (timeout), check for external file changes and redraw with updated timer
+        else {
+            // Check if the file has been modified externally (e.g., by CLI)
+            app.check_and_reload_if_modified(storage);
+        }
     }
 
     Ok(())
@@ -166,6 +172,7 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &storage::Storag
             KeyCode::Char('r') => app.redo(),
             KeyCode::Char('s') => {
                 let _ = storage.save(&app.day_data);
+                app.last_file_modified = storage.get_file_modified_time(&app.current_date);
             }
             KeyCode::Char('[') => app.navigate_to_previous_day(),
             KeyCode::Char(']') => app.navigate_to_next_day(),
@@ -257,6 +264,7 @@ fn execute_command_action(
         CommandAction::Redo => app.redo(),
         CommandAction::Save => {
             let _ = storage.save(&app.day_data);
+            app.last_file_modified = storage.get_file_modified_time(&app.current_date);
         }
         CommandAction::StartTimer => {
             if let Err(e) = app.start_timer_for_selected() {

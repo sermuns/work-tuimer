@@ -121,6 +121,25 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Completed Tasks
 
+### Bug Fix: TUI File Synchronization - Auto-Reload External Changes (2025-11-08)
+- [x] Add `get_file_modified_time()` method to Storage to check file modification timestamps
+- [x] Add `last_file_modified: Option<SystemTime>` field to AppState to track last known file state
+- [x] Implement `check_and_reload_if_modified()` method in AppState to detect and reload external changes
+- [x] Update main.rs event loop to call reload check every 500ms during polling timeout
+- [x] Update all save operations (quit, day navigation, manual save) to set `last_file_modified` timestamp
+- [x] All 126 tests passing
+- **Context**: Critical bug where TUI would overwrite CLI-created records. When TUI was running in background and user created timer records via CLI, those records would disappear when TUI saved (on quit, day navigation, or manual save). TUI only loaded file once at startup and kept stale data in memory.
+- **Root Cause**: TUI had no file change detection. It loaded `YYYY-MM-DD.json` once at startup and kept data in memory. When user created CLI records while TUI was running, TUI was unaware of changes. On save (via `q`, `[`/`]`, or `s` keys), TUI would write its stale in-memory data, overwriting all CLI changes.
+- **Solution**: Implemented periodic file monitoring with auto-reload:
+  1. Storage: Added `get_file_modified_time()` to check file's last modification timestamp
+  2. AppState: Added `last_file_modified` field and `check_and_reload_if_modified()` method
+  3. Main loop: Calls reload check every 500ms (during existing timer polling), reloads if file modified
+  4. Save operations: Update `last_file_modified` after TUI saves to prevent false reload of own changes
+- **Behavior**: TUI now detects external file changes within 500ms and automatically reloads data, preserving CLI-created records while maintaining responsive UI
+- **Testing**: All 126 tests pass. CLI timer workflow (start → stop) successfully creates records visible in JSON file.
+- **Files Modified**: src/storage/mod.rs (13 lines: new method), src/ui/app_state.rs (32 lines: field + method), src/main.rs (8 lines: reload calls + timestamp updates)
+- **Branch**: feature/timer-tracking
+
 ### Bug Fix: TUI UTC Timezone Causing CLI Records Invisible (2025-11-08)
 - [x] Investigate CLI-created timer records not visible in TUI
 - [x] Identify root cause: TUI using UTC time while CLI uses local time
