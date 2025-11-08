@@ -339,6 +339,7 @@ mod tests {
             paused_at: None,
             created_at: now,
             updated_at: now,
+            source_record_id: None,
         };
 
         // Save
@@ -375,6 +376,7 @@ mod tests {
             paused_at: None,
             created_at: now,
             updated_at: now,
+            source_record_id: None,
         };
 
         // Save

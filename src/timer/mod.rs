@@ -58,6 +58,11 @@ pub struct TimerState {
 
     /// When this timer record was last updated (audit field)
     pub updated_at: OffsetDateTime,
+
+    /// ID of the source work record that this timer was started from
+    /// If present, stopping the timer will update the existing record instead of creating a new one
+    #[serde(default)]
+    pub source_record_id: Option<u32>,
 }
 
 /// Timer manager for controlling timer operations
@@ -78,7 +83,12 @@ impl TimerManager {
     ///
     /// # Errors
     /// Returns an error if a timer is already running
-    pub fn start(&self, task_name: String, description: Option<String>) -> Result<TimerState> {
+    pub fn start(
+        &self,
+        task_name: String,
+        description: Option<String>,
+        source_record_id: Option<u32>,
+    ) -> Result<TimerState> {
         // Check if timer already running
         if (self.storage.load_active_timer()?).is_some() {
             return Err(anyhow!("A timer is already running"));
@@ -97,6 +107,7 @@ impl TimerManager {
             paused_at: None,
             created_at: now,
             updated_at: now,
+            source_record_id,
         };
 
         self.storage.save_active_timer(&timer)?;
@@ -120,15 +131,35 @@ impl TimerManager {
         timer.status = TimerStatus::Stopped;
         timer.updated_at = now;
 
-        let work_record = self.to_work_record(timer)?;
-
-        // Save the work record to the day's data file
+        // Load the day's data file
         let mut day_data = self.storage.load(&timer_date)?;
-        day_data.add_record(work_record.clone());
-        self.storage.save(&day_data)?;
 
+        // If timer was started from an existing record, update that record's end time
+        // Otherwise, create a new work record
+        if let Some(source_id) = timer.source_record_id {
+            // Find and update the existing record
+            if let Some(record) = day_data.work_records.get_mut(&source_id) {
+                // Update the end time to now
+                let end_timepoint = TimePoint::new(now.hour(), now.minute())
+                    .map_err(|e| anyhow!(e))
+                    .context("Failed to create TimePoint for timer end time")?;
+                record.end = end_timepoint;
+            } else {
+                // Source record not found, create new one instead
+                let work_record = self.to_work_record(timer.clone())?;
+                day_data.add_record(work_record);
+            }
+        } else {
+            // No source record, create a new work record
+            let work_record = self.to_work_record(timer.clone())?;
+            day_data.add_record(work_record);
+        }
+
+        self.storage.save(&day_data)?;
         self.storage.clear_active_timer()?;
 
+        // Return a work record for the stopped timer (for display purposes)
+        let work_record = self.to_work_record(timer)?;
         Ok(work_record)
     }
 
@@ -281,6 +312,7 @@ mod tests {
             paused_at: None,
             created_at: now,
             updated_at: now,
+            source_record_id: None,
         };
 
         assert_eq!(timer.task_name, "Test Task");
@@ -303,6 +335,7 @@ mod tests {
             paused_at: None,
             created_at: now,
             updated_at: now,
+            source_record_id: None,
         };
 
         let json = serde_json::to_string(&timer).unwrap();
@@ -317,7 +350,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let result = manager.start("Work".to_string(), None);
+        let result = manager.start("Work".to_string(), None, None);
         assert!(result.is_ok());
 
         let timer = result.unwrap();
@@ -331,8 +364,8 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Task 1".to_string(), None);
-        let result = manager.start("Task 2".to_string(), None);
+        let _ = manager.start("Task 1".to_string(), None, None);
+        let result = manager.start("Task 2".to_string(), None, None);
 
         assert!(result.is_err());
         assert_eq!(
@@ -346,7 +379,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let result = manager.pause();
 
         assert!(result.is_ok());
@@ -360,7 +393,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let _ = manager.pause();
         let result = manager.pause();
 
@@ -381,7 +414,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let _ = manager.pause();
         let result = manager.resume();
 
@@ -396,7 +429,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let paused1 = manager.pause().unwrap();
         assert_eq!(paused1.paused_duration_secs, 0);
 
@@ -413,7 +446,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let result = manager.resume();
 
         assert!(result.is_err());
@@ -433,7 +466,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let result = manager.status().unwrap();
 
         assert!(result.is_some());
@@ -447,7 +480,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), None);
+        let _ = manager.start("Work".to_string(), None, None);
         let result = manager.stop();
 
         assert!(result.is_ok());
@@ -473,7 +506,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Work".to_string(), Some("Important task".to_string()));
+        let _ = manager.start("Work".to_string(), Some("Important task".to_string()), None);
         let work_record = manager.stop().unwrap();
 
         assert_eq!(work_record.name, "Work");
@@ -486,7 +519,7 @@ mod tests {
         let manager = TimerManager::new(storage);
 
         // Start
-        let started = manager.start("Task".to_string(), None).unwrap();
+        let started = manager.start("Task".to_string(), None, None).unwrap();
         assert_eq!(started.status, TimerStatus::Running);
 
         // Pause
@@ -519,7 +552,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let timer = manager.start("Task".to_string(), None).unwrap();
+        let timer = manager.start("Task".to_string(), None, None).unwrap();
         let elapsed = manager.get_elapsed_duration(&timer);
 
         // Should be close to 0 since just started
@@ -531,7 +564,7 @@ mod tests {
         let (storage, _temp) = create_test_storage();
         let manager = TimerManager::new(storage);
 
-        let _ = manager.start("Task".to_string(), None);
+        let _ = manager.start("Task".to_string(), None, None);
         let _ = manager.pause();
 
         let timer = manager.status().unwrap().unwrap();

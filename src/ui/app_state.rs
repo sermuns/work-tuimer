@@ -955,7 +955,11 @@ impl AppState {
                 .map_err(|_| "Failed to initialize storage".to_string())?;
             let timer_manager = TimerManager::new(storage);
 
-            match timer_manager.start(record.name.clone(), Some(record.description.clone())) {
+            match timer_manager.start(
+                record.name.clone(),
+                Some(record.description.clone()),
+                Some(record.id),
+            ) {
                 Ok(timer) => {
                     self.active_timer = Some(timer);
                     Ok(())
