@@ -100,7 +100,8 @@ impl TimerManager {
             return Err(anyhow!("A timer is already running"));
         }
 
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_local()
+            .context("Failed to get local time. System clock may not be configured correctly.")?;
         let timer = TimerState {
             id: None,
             task_name,
@@ -131,7 +132,8 @@ impl TimerManager {
             .load_active_timer()?
             .ok_or_else(|| anyhow!("No timer is currently running"))?;
 
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_local()
+            .context("Failed to get local time. System clock may not be configured correctly.")?;
 
         // Determine which date's data file to load:
         // - If timer has source_record_date, use that (record is from a specific day's view)
@@ -195,7 +197,8 @@ impl TimerManager {
             return Err(anyhow!("Can only pause a running timer"));
         }
 
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_local()
+            .context("Failed to get local time. System clock may not be configured correctly.")?;
         timer.paused_at = Some(now);
         timer.status = TimerStatus::Paused;
         timer.updated_at = now;
@@ -218,7 +221,8 @@ impl TimerManager {
             return Err(anyhow!("Can only resume a paused timer"));
         }
 
-        let now = OffsetDateTime::now_utc();
+        let now = OffsetDateTime::now_local()
+            .context("Failed to get local time. System clock may not be configured correctly.")?;
 
         // Add current pause duration to cumulative paused time
         if let Some(paused_at) = timer.paused_at {
@@ -247,10 +251,10 @@ impl TimerManager {
     pub fn get_elapsed_duration(&self, timer: &TimerState) -> StdDuration {
         let end_point = if timer.status == TimerStatus::Paused {
             // If paused, use when it was paused
-            timer.paused_at.unwrap_or_else(OffsetDateTime::now_utc)
+            timer.paused_at.unwrap_or_else(|| OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc()))
         } else {
             // If running, use now
-            OffsetDateTime::now_utc()
+            OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
         };
 
         let elapsed = end_point - timer.start_time;

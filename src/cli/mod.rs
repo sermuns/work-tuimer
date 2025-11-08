@@ -85,11 +85,13 @@ fn handle_stop(storage: Storage) -> Result<()> {
     let elapsed = timer_manager.get_elapsed_duration(&timer);
     let formatted_duration = format_duration(elapsed);
 
-    // Stop the timer and get the work record
-    let _record = timer_manager.stop()?;
-
     let start_time = format_time(timer.start_time);
-    let end_time = format_time(timer.end_time.unwrap_or_else(time::OffsetDateTime::now_utc));
+
+    // Stop the timer and get the work record
+    let record = timer_manager.stop()?;
+
+    // Format end time from the work record (HH:MM format)
+    let end_time = format!("{:02}:{:02}:{:02}", record.end.hour, record.end.minute, 0);
 
     println!("✓ Timer stopped");
     println!("  Task: {}", timer.task_name);
