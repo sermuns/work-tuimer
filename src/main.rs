@@ -250,6 +250,36 @@ fn execute_command_action(
         CommandAction::Save => {
             let _ = storage.save(&app.day_data);
         }
+        CommandAction::StartTimer => {
+            if let Err(e) = app.start_timer_for_selected() {
+                app.last_error_message = Some(format!("Failed to start timer: {}", e));
+            }
+        }
+        CommandAction::PauseTimer => {
+            #[allow(clippy::collapsible_if)]
+            if app
+                .active_timer
+                .as_ref()
+                .is_some_and(|t| matches!(t.status, crate::timer::TimerStatus::Running))
+            {
+                if let Err(e) = app.pause_active_timer() {
+                    app.last_error_message = Some(format!("Failed to pause timer: {}", e));
+                }
+            } else if app
+                .active_timer
+                .as_ref()
+                .is_some_and(|t| matches!(t.status, crate::timer::TimerStatus::Paused))
+            {
+                if let Err(e) = app.resume_active_timer() {
+                    app.last_error_message = Some(format!("Failed to resume timer: {}", e));
+                }
+            }
+        }
+        CommandAction::StopTimer => {
+            if let Err(e) = app.stop_active_timer() {
+                app.last_error_message = Some(format!("Failed to stop timer: {}", e));
+            }
+        }
         CommandAction::Quit => app.should_quit = true,
     }
 }

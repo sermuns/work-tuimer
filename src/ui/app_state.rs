@@ -42,6 +42,9 @@ pub enum CommandAction {
     Undo,
     Redo,
     Save,
+    StartTimer,
+    PauseTimer,
+    StopTimer,
     Quit,
 }
 
@@ -143,6 +146,21 @@ impl AppState {
                 key: "s",
                 description: "Save to file",
                 action: CommandAction::Save,
+            },
+            Command {
+                key: "S",
+                description: "Start timer on selected record",
+                action: CommandAction::StartTimer,
+            },
+            Command {
+                key: "P",
+                description: "Pause/Resume active timer",
+                action: CommandAction::PauseTimer,
+            },
+            Command {
+                key: "X",
+                description: "Stop active timer",
+                action: CommandAction::StopTimer,
             },
             Command {
                 key: "q",
