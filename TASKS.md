@@ -121,6 +121,32 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Completed Tasks
 
+### Bug Fix: Timer Bug Fixes - PR #26 (2025-11-08)
+- [x] Fix timer bar visibility - allocate 3 lines for borders and content
+- [x] Fix timer counter not updating - add event polling with 500ms timeout
+- [x] Fix timer using UTC instead of local time - replace all `now_utc()` with `now_local()`
+- [x] Fix storage location to use ./data/ for CLI and TUI consistency
+- **Context**: Fixed 4 critical bugs discovered during timer testing:
+  1. **Timer Bar Visibility**: Timer bar was being overwritten by table - fixed by allocating proper space (3 lines for title + borders)
+  2. **Counter Not Updating**: Timer display was frozen - added event polling with 500ms timeout to refresh UI
+  3. **UTC Timezone Bug**: Timer recorded UTC instead of local time - changed all 5 `OffsetDateTime::now_utc()` calls to `now_local()` in timer/mod.rs
+  4. **Storage Location Inconsistency**: CLI saved to `~/Library/Application Support/`, TUI read from `./data/` - changed `get_data_directory()` to prioritize `./data/` as primary location
+- **Root Cause (Storage)**: `src/storage/mod.rs` line 26-37 prioritized system directory (`dirs::data_local_dir()`) over local `./data/` directory, causing CLI and TUI to use different storage locations
+- **Solution**: Modified `get_data_directory()` to check `./data/` first, only falling back to system directory if `./data/` cannot be created
+- **Testing**: 
+  - All 126 tests passing, no clippy warnings
+  - CLI commands tested: `start`, `stop`, `pause`, `resume`, `status`
+  - Verified timer saves to `./data/running_timer.json` and `./data/YYYY-MM-DD.json`
+  - Verified timezone: Timer recorded 13:40 CET (local time), not 12:40 UTC
+  - Verified pause/resume: Timer paused at 25s, resumed and continued counting (26s → 29s)
+- **Files Modified**: src/timer/mod.rs (UTC fix), src/cli/mod.rs (display fix), src/storage/mod.rs (storage location fix), src/ui/render.rs (timer bar fix), src/main.rs (event polling fix)
+- **PR**: https://github.com/Kamyil/work-tuimer/pull/26
+- **Commits**:
+  - 8532a2c - "Fix timer bar visibility - allocate 3 lines for borders and content"
+  - bf30093 - "Fix timer counter not updating - add event polling with timeout"
+  - 09a1ad3 - "Fix timer using UTC instead of local time"
+  - 20d6d42 - "Fix storage location to use ./data for CLI and TUI consistency"
+
 ### Bug Fix: Timer Stop Cross-Date Bug (2025-11-08)
 - [x] Add `source_record_date: Option<Date>` field to `TimerState` struct
 - [x] Update `TimerManager::start()` to accept `source_record_date` parameter
