@@ -171,6 +171,7 @@ pub struct CustomThemeColors {
     pub timer_active_bg: String,
     pub row_alternate_bg: String,
     pub edit_bg: String,
+    pub focus_bg: String,
 
     // Text colors
     pub primary_text: String,
@@ -206,6 +207,7 @@ pub struct Theme {
     pub timer_active_bg: Color,
     pub row_alternate_bg: Color,
     pub edit_bg: Color,
+    pub focus_bg: Color,
 
     // Text colors
     pub primary_text: Color,
@@ -236,6 +238,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(34, 139, 34),
             row_alternate_bg: Color::Rgb(25, 25, 35),
             edit_bg: Color::Rgb(22, 78, 99),
+            focus_bg: Color::Rgb(80, 60, 120),            // purple focus indicator
             primary_text: Color::White,
             secondary_text: Color::Gray,
             highlight_text: Color::Cyan,
@@ -260,6 +263,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(152, 187, 106),   // springGreen (brighter)
             row_alternate_bg: Color::Rgb(22, 25, 32),     // sumiInk1 (darker)
             edit_bg: Color::Rgb(106, 149, 137),           // waveAqua1 (distinct teal, not blue!)
+            focus_bg: Color::Rgb(149, 127, 184),          // oniViolet (purple focus indicator)
             primary_text: Color::Rgb(220, 215, 186),      // fujiWhite
             secondary_text: Color::Rgb(114, 118, 129),    // fujiGray (comments)
             highlight_text: Color::Rgb(230, 195, 132),    // carpYellow (warmer highlight)
@@ -284,6 +288,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(166, 227, 161),   // green
             row_alternate_bg: Color::Rgb(24, 24, 37),     // mantle
             edit_bg: Color::Rgb(137, 180, 250),           // blue (dimmed)
+            focus_bg: Color::Rgb(203, 166, 247),          // mauve (purple focus indicator)
             primary_text: Color::Rgb(205, 214, 244),      // text
             secondary_text: Color::Rgb(127, 132, 156),    // overlay0
             highlight_text: Color::Rgb(137, 180, 250),    // blue
@@ -308,6 +313,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(152, 151, 26),    // green
             row_alternate_bg: Color::Rgb(29, 32, 33),     // bg0_h
             edit_bg: Color::Rgb(80, 73, 69),              // bg3
+            focus_bg: Color::Rgb(211, 134, 155),          // purple (warm purple focus)
             primary_text: Color::Rgb(235, 219, 178),      // fg
             secondary_text: Color::Rgb(146, 131, 116),    // fg4
             highlight_text: Color::Rgb(131, 165, 152),    // aqua
@@ -332,6 +338,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(166, 226, 46),    // vibrant green
             row_alternate_bg: Color::Rgb(30, 31, 28),     // darker bg
             edit_bg: Color::Rgb(100, 85, 60),             // warm brown (distinct from selected_bg!)
+            focus_bg: Color::Rgb(174, 129, 255),          // purple (vibrant purple focus)
             primary_text: Color::Rgb(248, 248, 242),      // foreground
             secondary_text: Color::Rgb(117, 113, 94),     // comment gray
             highlight_text: Color::Rgb(253, 151, 31),     // bright orange (not cyan!)
@@ -356,6 +363,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(80, 250, 123),    // green
             row_alternate_bg: Color::Rgb(30, 31, 40),     // darker than bg
             edit_bg: Color::Rgb(98, 114, 164),            // purple (distinct from selected_bg!)
+            focus_bg: Color::Rgb(189, 147, 249),          // bright purple (focus indicator)
             primary_text: Color::Rgb(248, 248, 242),      // foreground
             secondary_text: Color::Rgb(98, 114, 164),     // purple/comment
             highlight_text: Color::Rgb(189, 147, 249),    // bright purple
@@ -380,6 +388,7 @@ impl Theme {
             timer_active_bg: Color::Rgb(131, 192, 146),   // green
             row_alternate_bg: Color::Rgb(35, 38, 32),     // bg0
             edit_bg: Color::Rgb(83, 86, 77),              // bg3
+            focus_bg: Color::Rgb(217, 143, 172),          // purple (soft purple focus)
             primary_text: Color::Rgb(211, 198, 170),      // fg
             secondary_text: Color::Rgb(146, 142, 123),    // gray1
             highlight_text: Color::Rgb(123, 175, 153),    // aqua
@@ -404,6 +413,7 @@ impl Theme {
             timer_active_bg: Color::Green,
             row_alternate_bg: Color::Reset,
             edit_bg: Color::Cyan,
+            focus_bg: Color::Magenta,                     // magenta/purple focus
             primary_text: Color::Reset,
             secondary_text: Color::DarkGray,
             highlight_text: Color::Cyan,
@@ -428,6 +438,7 @@ impl Theme {
             timer_active_bg: parse_color(&colors.timer_active_bg),
             row_alternate_bg: parse_color(&colors.row_alternate_bg),
             edit_bg: parse_color(&colors.edit_bg),
+            focus_bg: parse_color(&colors.focus_bg),
             primary_text: parse_color(&colors.primary_text),
             secondary_text: parse_color(&colors.secondary_text),
             highlight_text: parse_color(&colors.highlight_text),

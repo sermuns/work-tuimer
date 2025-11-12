@@ -370,7 +370,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     .add_modifier(Modifier::BOLD)
             } else if is_selected && matches!(app.edit_field, crate::ui::EditField::Name) {
                 Style::default()
-                    .bg(app.theme.selected_bg)
+                    .bg(app.theme.focus_bg)
                     .fg(app.theme.primary_text)
                     .add_modifier(Modifier::BOLD)
             } else {
@@ -385,7 +385,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     .add_modifier(Modifier::BOLD)
             } else if is_selected && matches!(app.edit_field, crate::ui::EditField::Start) {
                 Style::default()
-                    .bg(app.theme.selected_bg)
+                    .bg(app.theme.focus_bg)
                     .fg(app.theme.primary_text)
                     .add_modifier(Modifier::BOLD)
             } else {
@@ -399,7 +399,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     .add_modifier(Modifier::BOLD)
             } else if is_selected && matches!(app.edit_field, crate::ui::EditField::End) {
                 Style::default()
-                    .bg(app.theme.selected_bg)
+                    .bg(app.theme.focus_bg)
                     .fg(app.theme.primary_text)
                     .add_modifier(Modifier::BOLD)
             } else {
@@ -415,7 +415,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                     .add_modifier(Modifier::BOLD)
             } else if is_selected && matches!(app.edit_field, crate::ui::EditField::Description) {
                 Style::default()
-                    .bg(app.theme.selected_bg)
+                    .bg(app.theme.focus_bg)
                     .fg(app.theme.primary_text)
                     .add_modifier(Modifier::BOLD)
             } else {
