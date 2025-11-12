@@ -55,12 +55,12 @@ pub fn handle_command(cmd: Commands, storage: Storage) -> Result<()> {
     match cmd {
         Commands::Session { command } => match command {
             SessionCommands::Start { task, description } => {
-                handle_start(task, description, storage)
+                return handle_start(task, description, storage);
             }
-            SessionCommands::Stop => handle_stop(storage),
-            SessionCommands::Pause => handle_pause(storage),
-            SessionCommands::Resume => handle_resume(storage),
-            SessionCommands::Status => handle_status(storage),
+            SessionCommands::Stop => return handle_stop(storage),
+            SessionCommands::Pause => return handle_pause(storage),
+            SessionCommands::Resume => return handle_resume(storage),
+            SessionCommands::Status => return handle_status(storage),
         },
     }
 }
@@ -85,7 +85,7 @@ fn handle_start(task: String, description: Option<String>, storage: Storage) -> 
     }
     println!("  Started at: {}", start_time);
 
-    Ok(())
+    return Ok(());
 }
 
 /// Stop the running session
@@ -114,7 +114,7 @@ fn handle_stop(storage: Storage) -> Result<()> {
     println!("  Started at: {}", start_time);
     println!("  Ended at: {}", end_time);
 
-    Ok(())
+    return Ok(());
 }
 
 /// Pause the running session
@@ -133,7 +133,7 @@ fn handle_pause(storage: Storage) -> Result<()> {
     println!("  Task: {}", timer.task_name);
     println!("  Elapsed: {}", formatted_duration);
 
-    Ok(())
+    return Ok(());
 }
 
 /// Resume the paused session
@@ -152,7 +152,7 @@ fn handle_resume(storage: Storage) -> Result<()> {
     println!("  Task: {}", timer.task_name);
     println!("  Total elapsed (before pause): {}", formatted_duration);
 
-    Ok(())
+    return Ok(());
 }
 
 /// Show status of running session
@@ -186,12 +186,12 @@ fn handle_status(storage: Storage) -> Result<()> {
         }
     }
 
-    Ok(())
+    return Ok(());
 }
 
 /// Format time::OffsetDateTime for display (HH:MM:SS)
 fn format_time(dt: time::OffsetDateTime) -> String {
-    format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second())
+    return format!("{:02}:{:02}:{:02}", dt.hour(), dt.minute(), dt.second());
 }
 
 /// Format Duration for display (h:mm:ss or mm:ss)
@@ -202,9 +202,9 @@ fn format_duration(duration: Duration) -> String {
     let seconds = total_secs % 60;
 
     if hours > 0 {
-        format!("{}h {:02}m {:02}s", hours, minutes, seconds)
+        return format!("{}h {:02}m {:02}s", hours, minutes, seconds);
     } else {
-        format!("{}m {:02}s", minutes, seconds)
+        return format!("{}m {:02}s", minutes, seconds);
     }
 }
 

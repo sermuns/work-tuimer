@@ -28,14 +28,14 @@ fn main() -> Result<()> {
     }
 
     // Otherwise, run TUI
-    run_tui()
+    return run_tui();
 }
 
 /// Run in CLI mode
 fn run_cli() -> Result<()> {
     let cli = cli::Cli::parse();
     let storage = storage::Storage::new()?;
-    cli::handle_command(cli.command, storage)
+    return cli::handle_command(cli.command, storage);
 }
 
 /// Run in TUI mode
@@ -72,7 +72,7 @@ fn run_tui() -> Result<()> {
         eprintln!("Error: {}", err);
     }
 
-    Ok(())
+    return Ok(())
 }
 
 fn run_app<B: ratatui::backend::Backend>(
@@ -111,7 +111,7 @@ fn run_app<B: ratatui::backend::Backend>(
         }
     }
 
-    Ok(())
+    return Ok(())
 }
 
 fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &mut storage::StorageManager) {

@@ -82,7 +82,7 @@ impl TimerManager {
     /// Create a new timer manager with low-level Storage
     /// For internal use - external callers should use storage::StorageManager instead
     pub fn new(storage: Storage) -> Self {
-        TimerManager { storage }
+        return TimerManager { storage };
     }
 
     /// Start a new timer
@@ -120,7 +120,7 @@ impl TimerManager {
         };
 
         self.storage.save_active_timer(&timer)?;
-        Ok(timer)
+        return Ok(timer);
     }
 
     /// Stop the active timer and convert it to a WorkRecord
@@ -141,7 +141,7 @@ impl TimerManager {
         // - Otherwise use timer.start_time.date() (creating new record on timer's start date)
         let target_date = timer
             .source_record_date
-            .unwrap_or_else(|| timer.start_time.date());
+            .unwrap_or_else(|| return timer.start_time.date());
 
         timer.end_time = Some(now);
         timer.status = TimerStatus::Stopped;
@@ -181,7 +181,7 @@ impl TimerManager {
 
         // Return a work record for the stopped timer (for display purposes)
         let work_record = self.to_work_record(timer)?;
-        Ok(work_record)
+        return Ok(work_record);
     }
 
     /// Pause the active timer
@@ -209,7 +209,7 @@ impl TimerManager {
         timer.updated_at = now;
 
         self.storage.save_active_timer(&timer)?;
-        Ok(timer)
+        return Ok(timer)
     }
 
     /// Resume a paused timer
@@ -240,14 +240,14 @@ impl TimerManager {
         timer.updated_at = now;
 
         self.storage.save_active_timer(&timer)?;
-        Ok(timer)
+        return Ok(timer)
     }
 
     /// Get the current timer status
     ///
     /// Returns None if no timer is running
     pub fn status(&self) -> Result<Option<TimerState>> {
-        self.storage.load_active_timer()
+        return self.storage.load_active_timer();
     }
 
     /// Calculate elapsed duration of a timer
@@ -257,11 +257,11 @@ impl TimerManager {
         let end_point = if timer.status == TimerStatus::Paused {
             // If paused, use when it was paused
             timer.paused_at.unwrap_or_else(|| {
-                OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+                return OffsetDateTime::now_local().unwrap_or_else(|_| return OffsetDateTime::now_utc())
             })
         } else {
             // If running, use now
-            OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+            OffsetDateTime::now_local().unwrap_or_else(|_| return OffsetDateTime::now_utc())
         };
 
         let elapsed = end_point - timer.start_time;
@@ -271,9 +271,9 @@ impl TimerManager {
         let elapsed_std = StdDuration::from_secs(elapsed.whole_seconds() as u64)
             + StdDuration::from_nanos(elapsed.subsec_nanoseconds() as u64);
 
-        elapsed_std
+        return elapsed_std
             .checked_sub(paused_duration_std)
-            .unwrap_or(StdDuration::ZERO)
+            .unwrap_or(StdDuration::ZERO);
     }
 
     /// Convert a stopped timer to a WorkRecord
@@ -307,7 +307,7 @@ impl TimerManager {
             record.description = description;
         }
 
-        Ok(record)
+        return Ok(record);
     }
 }
 

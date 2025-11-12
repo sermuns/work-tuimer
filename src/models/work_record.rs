@@ -15,14 +15,14 @@ pub struct WorkRecord {
 impl WorkRecord {
     pub fn new(id: u32, name: String, start: TimePoint, end: TimePoint) -> Self {
         let total_minutes = Self::calculate_duration(&start, &end);
-        WorkRecord {
+        return WorkRecord {
             id,
             name,
             start,
             end,
             total_minutes,
             description: String::new(),
-        }
+        };
     }
 
     pub fn calculate_duration(start: &TimePoint, end: &TimePoint) -> u32 {
@@ -30,9 +30,9 @@ impl WorkRecord {
         let end_mins = end.to_minutes_since_midnight();
 
         if end_mins >= start_mins {
-            end_mins - start_mins
+            return end_mins - start_mins;
         } else {
-            (24 * 60 - start_mins) + end_mins
+            return (24 * 60 - start_mins) + end_mins;
         }
     }
 
@@ -43,7 +43,7 @@ impl WorkRecord {
     pub fn format_duration(&self) -> String {
         let hours = self.total_minutes / 60;
         let minutes = self.total_minutes % 60;
-        format!("{}h {:02}m", hours, minutes)
+        return format!("{}h {:02}m", hours, minutes);
     }
 }
 

@@ -7,9 +7,9 @@ pub fn extract_ticket_from_name(name: &str) -> Option<String> {
     // Match common ticket patterns: WORD-NUMBER (e.g., PROJ-123, WL-1, LIN-456)
     let re = Regex::new(r"\b([A-Z]{2,10}-\d+)\b").ok()?;
 
-    re.captures(name)
-        .and_then(|caps| caps.get(1))
-        .map(|m| m.as_str().to_string())
+    return re.captures(name)
+        .and_then(|caps| return caps.get(1))
+        .map(|m| return m.as_str().to_string());
 }
 
 /// Detect which tracker a ticket belongs to based on config patterns
@@ -23,17 +23,17 @@ pub fn detect_tracker(ticket: &str, config: &Config) -> Option<String> {
     }
 
     // Fallback to default tracker if configured
-    config.integrations.default_tracker.clone()
+    return config.integrations.default_tracker.clone();
 }
 
 /// Check if ticket matches any of the provided patterns
 fn matches_patterns(ticket: &str, patterns: &[String]) -> bool {
-    patterns.iter().any(|pattern| {
-        Regex::new(pattern)
+    return patterns.iter().any(|pattern| {
+        return Regex::new(pattern)
             .ok()
-            .map(|re| re.is_match(ticket))
+            .map(|re| return re.is_match(ticket))
             .unwrap_or(false)
-    })
+    });
 }
 
 /// Build a URL for the given ticket and tracker name
@@ -63,7 +63,7 @@ pub fn build_url(
         .replace("{base_url}", &tracker_config.base_url)
         .replace("{ticket}", ticket);
 
-    Ok(url)
+    return Ok(url);
 }
 
 #[cfg(test)]

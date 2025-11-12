@@ -21,20 +21,20 @@ pub struct StorageManager {
 impl StorageManager {
     /// Create a new StorageManager
     pub fn new() -> Result<Self> {
-        Ok(StorageManager {
+        return Ok(StorageManager {
             storage: Storage::new()?,
             file_modified_times: std::collections::HashMap::new(),
-        })
+        });
     }
 
     /// Create a new StorageManager with a custom directory (for testing)
     #[doc(hidden)]
     #[allow(dead_code)]
     pub fn new_with_dir(data_dir: PathBuf) -> Result<Self> {
-        Ok(StorageManager {
+        return Ok(StorageManager {
             storage: Storage::new_with_dir(data_dir)?,
             file_modified_times: std::collections::HashMap::new(),
-        })
+        });
     }
 
     /// Load day data with automatic file modification tracking
@@ -43,7 +43,7 @@ impl StorageManager {
         let data = self.storage.load(&date)?;
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
-        Ok(data)
+        return Ok(data);
     }
 
     /// Check if file has been modified externally and reload if needed
@@ -58,7 +58,7 @@ impl StorageManager {
             // First time checking this date - load it and start tracking
             let data = self.storage.load(&date)?;
             self.file_modified_times.insert(date, current_modified);
-            Ok(Some(data))
+            return Ok(Some(data));
         } else {
             let last_known = self.file_modified_times.get(&date).copied().flatten();
 
@@ -66,9 +66,9 @@ impl StorageManager {
             if current_modified != last_known {
                 let data = self.storage.load(&date)?;
                 self.file_modified_times.insert(date, current_modified);
-                Ok(Some(data))
+                return Ok(Some(data));
             } else {
-                Ok(None)
+                return Ok(None);
             }
         }
     }
@@ -84,7 +84,7 @@ impl StorageManager {
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
 
-        Ok(())
+        return Ok(());
     }
 
     /// Update an existing work record (transactional: load → update → save → track)
@@ -101,7 +101,7 @@ impl StorageManager {
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
 
-        Ok(())
+        return Ok(());
     }
 
     /// Remove a work record by ID (transactional: load → remove → save → track)
@@ -121,7 +121,7 @@ impl StorageManager {
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
 
-        Ok(record)
+        return Ok(record);
     }
 
     /// Save day data and update tracking
@@ -133,27 +133,27 @@ impl StorageManager {
         self.file_modified_times
             .insert(day_data.date, modified_time);
 
-        Ok(())
+        return Ok(());
     }
 
     /// Get the last known modification time for a date
     pub fn get_last_modified(&self, date: &Date) -> Option<SystemTime> {
-        self.file_modified_times.get(date).copied().flatten()
+        return self.file_modified_times.get(date).copied().flatten();
     }
 
     /// Pass-through methods for timer operations (these don't need tracking)
     #[allow(dead_code)]
     pub fn save_active_timer(&self, timer: &TimerState) -> Result<()> {
-        self.storage.save_active_timer(timer)
+        return self.storage.save_active_timer(timer);
     }
 
     pub fn load_active_timer(&self) -> Result<Option<TimerState>> {
-        self.storage.load_active_timer()
+        return self.storage.load_active_timer();
     }
 
     #[allow(dead_code)]
     pub fn clear_active_timer(&self) -> Result<()> {
-        self.storage.clear_active_timer()
+        return self.storage.clear_active_timer();
     }
 
     /// Create a TimerManager using the internal storage
@@ -161,7 +161,7 @@ impl StorageManager {
     fn create_timer_manager(&self) -> crate::timer::TimerManager {
         // Clone the storage for timer operations
         // This is safe because timer operations are independent
-        crate::timer::TimerManager::new(self.storage.clone())
+        return crate::timer::TimerManager::new(self.storage.clone());
     }
 
     /// Start a new timer with the given task name and optional description
@@ -173,32 +173,32 @@ impl StorageManager {
         source_record_date: Option<time::Date>,
     ) -> Result<TimerState> {
         let timer_manager = self.create_timer_manager();
-        timer_manager.start(task_name, description, source_record_id, source_record_date)
+        return timer_manager.start(task_name, description, source_record_id, source_record_date);
     }
 
     /// Stop the active timer and return the work record
     pub fn stop_timer(&self) -> Result<crate::models::WorkRecord> {
         let timer_manager = self.create_timer_manager();
-        timer_manager.stop()
+        return timer_manager.stop();
     }
 
     /// Pause the active timer
     pub fn pause_timer(&self) -> Result<TimerState> {
         let timer_manager = self.create_timer_manager();
-        timer_manager.pause()
+        return timer_manager.pause();
     }
 
     /// Resume a paused timer
     pub fn resume_timer(&self) -> Result<TimerState> {
         let timer_manager = self.create_timer_manager();
-        timer_manager.resume()
+        return timer_manager.resume();
     }
 
     /// Get elapsed duration for a timer
     #[allow(dead_code)]
     pub fn get_timer_elapsed(&self, timer: &TimerState) -> std::time::Duration {
         let timer_manager = self.create_timer_manager();
-        timer_manager.get_elapsed_duration(timer)
+        return timer_manager.get_elapsed_duration(timer);
     }
 }
 
@@ -207,7 +207,7 @@ impl Storage {
         let data_dir = Self::get_data_directory()?;
         fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
 
-        Ok(Storage { data_dir })
+        return Ok(Storage { data_dir });
     }
 
     /// Create a new Storage with a custom directory (for testing)
@@ -215,7 +215,7 @@ impl Storage {
     #[allow(dead_code)]
     pub fn new_with_dir(data_dir: PathBuf) -> Result<Self> {
         fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
-        Ok(Storage { data_dir })
+        return Ok(Storage { data_dir });
     }
 
     fn get_data_directory() -> Result<PathBuf> {
@@ -233,16 +233,16 @@ impl Storage {
             return Ok(local_data);
         }
 
-        anyhow::bail!("Failed to create data directory in system location or ./data")
+        anyhow::bail!("Failed to create data directory in system location or ./data");
     }
 
     fn get_file_path(&self, date: &Date) -> PathBuf {
-        self.data_dir.join(format!(
+        return self.data_dir.join(format!(
             "{}-{:02}-{:02}.json",
             date.year(),
             date.month() as u8,
             date.day()
-        ))
+        ));
     }
 
     pub fn load(&self, date: &Date) -> Result<DayData> {
@@ -257,7 +257,7 @@ impl Storage {
 
         let day_data: DayData = serde_json::from_str(&contents).context("Failed to parse JSON")?;
 
-        Ok(day_data)
+        return Ok(day_data);
     }
 
     pub fn save(&self, day_data: &DayData) -> Result<()> {
@@ -267,7 +267,7 @@ impl Storage {
 
         fs::write(&path, json).context(format!("Failed to write file: {:?}", path))?;
 
-        Ok(())
+        return Ok(());
     }
 
     /// Get the modification time of a day data file
@@ -275,15 +275,15 @@ impl Storage {
     pub fn get_file_modified_time(&self, date: &Date) -> Option<std::time::SystemTime> {
         let path = self.get_file_path(date);
         if path.exists() {
-            fs::metadata(&path).ok().and_then(|m| m.modified().ok())
+            return fs::metadata(&path).ok().and_then(|m| return m.modified().ok());
         } else {
-            None
+            return None;
         }
     }
 
     /// Get the path to the running timer file
     fn get_timer_file_path(&self) -> PathBuf {
-        self.data_dir.join("running_timer.json")
+        return self.data_dir.join("running_timer.json");
     }
 
     /// Save an active timer to running_timer.json
@@ -291,7 +291,7 @@ impl Storage {
         let path = self.get_timer_file_path();
         let json = serde_json::to_string_pretty(timer).context("Failed to serialize timer")?;
         fs::write(&path, json).context(format!("Failed to write timer file: {:?}", path))?;
-        Ok(())
+        return Ok(());
     }
 
     /// Load the active timer from running_timer.json
@@ -309,7 +309,7 @@ impl Storage {
         let timer: TimerState =
             serde_json::from_str(&contents).context("Failed to parse timer JSON")?;
 
-        Ok(Some(timer))
+        return Ok(Some(timer));
     }
 
     /// Clear the active timer by deleting running_timer.json
@@ -320,7 +320,7 @@ impl Storage {
             fs::remove_file(&path).context(format!("Failed to delete timer file: {:?}", path))?;
         }
 
-        Ok(())
+        return Ok(());
     }
 }
 

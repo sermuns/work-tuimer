@@ -164,7 +164,7 @@ impl AppState {
             },
         ];
 
-        AppState {
+        return AppState {
             calendar_selected_date: current_date,
             calendar_view_month: current_date.month(),
             calendar_view_year: current_date.year(),
@@ -188,12 +188,12 @@ impl AppState {
             active_timer: None,
             last_file_modified: None,
             history: History::new(),
-        }
+        };
     }
 
     pub fn get_selected_record(&self) -> Option<&WorkRecord> {
         let records = self.day_data.get_sorted_records();
-        records.get(self.selected_index).copied()
+        return records.get(self.selected_index).copied();
     }
 
     pub fn move_selection_up(&mut self) {
@@ -344,14 +344,14 @@ impl AppState {
                         record_mut.start = self
                             .input_buffer
                             .parse()
-                            .map_err(|_| "Invalid start time format (use HH:MM)".to_string())?;
+                            .map_err(|_| return "Invalid start time format (use HH:MM)".to_string())?;
                         record_mut.update_duration();
                     }
                     EditField::End => {
                         record_mut.end = self
                             .input_buffer
                             .parse()
-                            .map_err(|_| "Invalid end time format (use HH:MM)".to_string())?;
+                            .map_err(|_| return "Invalid end time format (use HH:MM)".to_string())?;
                         record_mut.update_duration();
                     }
                     EditField::Description => {
@@ -360,14 +360,14 @@ impl AppState {
                 }
             }
         }
-        Ok(())
+        return Ok(());
     }
 
     pub fn save_edit(&mut self) -> Result<(), String> {
         self.save_snapshot();
         self.save_current_field()?;
         self.exit_edit_mode();
-        Ok(())
+        return Ok(());
     }
 
     pub fn add_new_record(&mut self) {
@@ -397,7 +397,7 @@ impl AppState {
         self.day_data.add_record(record);
 
         let records = self.day_data.get_sorted_records();
-        self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
+        self.selected_index = records.iter().position(|r| return r.id == id).unwrap_or(0);
     }
 
     pub fn add_break(&mut self) {
@@ -427,7 +427,7 @@ impl AppState {
         self.day_data.add_record(record);
 
         let records = self.day_data.get_sorted_records();
-        self.selected_index = records.iter().position(|r| r.id == id).unwrap_or(0);
+        self.selected_index = records.iter().position(|r| return r.id == id).unwrap_or(0);
     }
 
     pub fn delete_selected_record(&mut self) {
@@ -508,7 +508,7 @@ impl AppState {
         let start = self.visual_start.min(self.visual_end);
         let end = self.visual_start.max(self.visual_end);
 
-        index >= start && index <= end
+        return index >= start && index <= end;
     }
 
     pub fn delete_visual_selection(&mut self) {
@@ -521,8 +521,8 @@ impl AppState {
         let ids_to_delete: Vec<u32> = records
             .iter()
             .enumerate()
-            .filter(|(i, _)| *i >= start && *i <= end)
-            .map(|(_, record)| record.id)
+            .filter(|(i, _)| return *i >= start && *i <= end)
+            .map(|(_, record)| return record.id)
             .collect();
 
         for id in ids_to_delete {
@@ -606,7 +606,7 @@ impl AppState {
                 .available_commands
                 .iter()
                 .enumerate()
-                .map(|(i, cmd)| (i, 0, cmd))
+                .map(|(i, cmd)| return (i, 0, cmd))
                 .collect();
         }
 
@@ -616,23 +616,23 @@ impl AppState {
             .enumerate()
             .filter_map(|(i, cmd)| {
                 let search_text = format!("{} {}", cmd.key, cmd.description);
-                matcher
+                return matcher
                     .fuzzy_match(&search_text, query)
-                    .map(|score| (i, score, cmd))
+                    .map(|score| return (i, score, cmd))
             })
             .collect();
 
-        results.sort_by(|a, b| b.1.cmp(&a.1));
-        results
+        results.sort_by(|a, b| return b.1.cmp(&a.1));
+        return results;
     }
 
     pub fn execute_selected_command(&mut self) -> Option<CommandAction> {
         let filtered = self.get_filtered_commands();
         let action = filtered
             .get(self.command_palette_selected)
-            .map(|(_, _, cmd)| cmd.action);
+            .map(|(_, _, cmd)| return cmd.action);
         self.close_command_palette();
-        action
+        return action;
     }
 
     pub fn navigate_to_previous_day(&mut self) {
@@ -881,7 +881,7 @@ impl AppState {
         }
 
         task_names.sort();
-        task_names
+        return task_names;
     }
 
     pub fn get_filtered_task_names(&self) -> Vec<String> {
@@ -892,10 +892,10 @@ impl AppState {
             return all_tasks;
         }
 
-        all_tasks
+        return all_tasks
             .into_iter()
-            .filter(|task| task.to_lowercase().contains(&filter))
-            .collect()
+            .filter(|task| return task.to_lowercase().contains(&filter))
+            .collect();
     }
 
     pub fn move_task_picker_up(&mut self) {
@@ -962,12 +962,12 @@ impl AppState {
             ) {
                 Ok(timer) => {
                     self.active_timer = Some(timer);
-                    Ok(())
+                    return Ok(());
                 }
-                Err(e) => Err(e.to_string()),
+                Err(e) => return Err(e.to_string()),
             }
         } else {
-            Err("No record selected".to_string())
+            return Err("No record selected".to_string());
         }
     }
 
@@ -985,15 +985,15 @@ impl AppState {
                         Ok(new_day_data) => {
                             self.day_data = new_day_data;
                             self.selected_index = 0;
-                            Ok(())
+                            return Ok(());
                         }
-                        Err(e) => Err(format!("Failed to reload day data: {}", e)),
+                        Err(e) => return Err(format!("Failed to reload day data: {}", e)),
                     }
                 }
-                Err(e) => Err(e.to_string()),
+                Err(e) => return Err(e.to_string()),
             }
         } else {
-            Err("No active timer".to_string())
+            return Err("No active timer".to_string());
         }
     }
 
@@ -1006,12 +1006,12 @@ impl AppState {
             match storage.pause_timer() {
                 Ok(paused_timer) => {
                     self.active_timer = Some(paused_timer);
-                    Ok(())
+                    return Ok(());
                 }
-                Err(e) => Err(e.to_string()),
+                Err(e) => return Err(e.to_string()),
             }
         } else {
-            Err("No active timer".to_string())
+            return Err("No active timer".to_string());
         }
     }
 
@@ -1024,18 +1024,18 @@ impl AppState {
             match storage.resume_timer() {
                 Ok(resumed_timer) => {
                     self.active_timer = Some(resumed_timer);
-                    Ok(())
+                    return Ok(());
                 }
-                Err(e) => Err(e.to_string()),
+                Err(e) => return Err(e.to_string()),
             }
         } else {
-            Err("No active timer".to_string())
+            return Err("No active timer".to_string());
         }
     }
 
     /// Get current status of active timer or None if no timer running
     pub fn get_timer_status(&self) -> Option<&TimerState> {
-        self.active_timer.as_ref()
+        return self.active_timer.as_ref();
     }
 
     /// Check if the data file has been modified externally and reload if needed
@@ -1073,7 +1073,7 @@ impl AppState {
             changed = true;
         }
 
-        changed
+        return changed;
     }
 }
 
@@ -1086,18 +1086,18 @@ fn days_in_month(month: time::Month, year: i32) -> u8 {
         | Month::July
         | Month::August
         | Month::October
-        | Month::December => 31,
-        Month::April | Month::June | Month::September | Month::November => 30,
+        | Month::December => return 31,
+        Month::April | Month::June | Month::September | Month::November => return 30,
         Month::February => {
             if is_leap_year(year) {
-                29
+                return 29;
             } else {
-                28
+                return 28;
             }
         }
     }
 }
 
 fn is_leap_year(year: i32) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }

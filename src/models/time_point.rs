@@ -16,21 +16,21 @@ impl TimePoint {
         if minute >= 60 {
             return Err(format!("Minute must be 0-59, got {}", minute));
         }
-        Ok(TimePoint { hour, minute })
+        return Ok(TimePoint { hour, minute });
     }
 
     pub fn from_minutes_since_midnight(minutes: u32) -> Result<Self, String> {
         if minutes >= 24 * 60 {
             return Err(format!("Minutes must be < 1440, got {}", minutes));
         }
-        Ok(TimePoint {
+        return Ok(TimePoint {
             hour: (minutes / 60) as u8,
             minute: (minutes % 60) as u8,
-        })
+        });
     }
 
     pub fn to_minutes_since_midnight(self) -> u32 {
-        (self.hour as u32) * 60 + (self.minute as u32)
+        return (self.hour as u32) * 60 + (self.minute as u32);
     }
 
     pub fn parse(s: &str) -> Result<Self, String> {
@@ -46,13 +46,13 @@ impl TimePoint {
             .parse::<u8>()
             .map_err(|_| format!("Invalid minute: {}", parts[1]))?;
 
-        Self::new(hour, minute)
+        return Self::new(hour, minute);
     }
 }
 
 impl fmt::Display for TimePoint {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:02}:{:02}", self.hour, self.minute)
+        return write!(f, "{:02}:{:02}", self.hour, self.minute)
     }
 }
 
@@ -60,7 +60,7 @@ impl FromStr for TimePoint {
     type Err = String;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        TimePoint::parse(s)
+        return TimePoint::parse(s);
     }
 }
 

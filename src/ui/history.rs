@@ -10,7 +10,7 @@ pub struct History {
 
 impl History {
     pub fn new() -> Self {
-        Self::default()
+        return Self::default();
     }
 
     pub fn push(&mut self, state: DayData) {
@@ -24,18 +24,18 @@ impl History {
     pub fn undo(&mut self, current_state: DayData) -> Option<DayData> {
         if let Some(previous_state) = self.undo_stack.pop() {
             self.redo_stack.push(current_state);
-            Some(previous_state)
+            return Some(previous_state);
         } else {
-            None
+            return None;
         }
     }
 
     pub fn redo(&mut self, current_state: DayData) -> Option<DayData> {
         if let Some(next_state) = self.redo_stack.pop() {
             self.undo_stack.push(current_state);
-            Some(next_state)
+            return Some(next_state);
         } else {
-            None
+            return None;
         }
     }
 }

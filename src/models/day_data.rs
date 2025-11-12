@@ -12,11 +12,11 @@ pub struct DayData {
 
 impl DayData {
     pub fn new(date: Date) -> Self {
-        DayData {
+        return DayData {
             date,
             last_id: 0,
             work_records: HashMap::new(),
-        }
+        };
     }
 
     pub fn add_record(&mut self, record: WorkRecord) {
@@ -27,18 +27,18 @@ impl DayData {
     }
 
     pub fn remove_record(&mut self, id: u32) -> Option<WorkRecord> {
-        self.work_records.remove(&id)
+        return self.work_records.remove(&id);
     }
 
     pub fn next_id(&mut self) -> u32 {
         self.last_id += 1;
-        self.last_id
+        return self.last_id;
     }
 
     pub fn get_sorted_records(&self) -> Vec<&WorkRecord> {
         let mut records: Vec<&WorkRecord> = self.work_records.values().collect();
-        records.sort_by_key(|r| r.start);
-        records
+        records.sort_by_key(|r| return r.start);
+        return records;
     }
 
     pub fn get_grouped_totals(&self) -> Vec<(String, u32)> {
@@ -49,8 +49,8 @@ impl DayData {
         }
 
         let mut result: Vec<(String, u32)> = totals.into_iter().collect();
-        result.sort_by(|a, b| b.1.cmp(&a.1));
-        result
+        result.sort_by(|a, b| return b.1.cmp(&a.1));
+        return result;
     }
 }
 

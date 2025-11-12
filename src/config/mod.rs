@@ -49,9 +49,9 @@ impl Config {
                 .context(format!("Failed to read config file: {:?}", config_path))?;
             let config: Config =
                 toml::from_str(&contents).context("Failed to parse config TOML")?;
-            Ok(config)
+            return Ok(config);
         } else {
-            Ok(Config::default())
+            return Ok(Config::default());
         }
     }
 
@@ -84,15 +84,15 @@ impl Config {
         }
 
         // Final fallback for any platform
-        PathBuf::from("./config.toml")
+        return PathBuf::from("./config.toml");
     }
 
     /// Check if any tracker integration is properly configured
     pub fn has_integrations(&self) -> bool {
-        self.integrations
+        return self.integrations
             .trackers
             .values()
-            .any(|tracker| tracker.enabled && !tracker.base_url.is_empty())
+            .any(|tracker| return tracker.enabled && !tracker.base_url.is_empty());
     }
 }
 

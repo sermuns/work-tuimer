@@ -14,11 +14,11 @@ fn calculate_timer_elapsed(timer: &TimerState) -> StdDuration {
     let end_point = if timer.status == TimerStatus::Paused {
         // If paused, use when it was paused
         timer.paused_at.unwrap_or_else(|| {
-            OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+            return OffsetDateTime::now_local().unwrap_or_else(|_| return OffsetDateTime::now_utc())
         })
     } else {
         // If running, use now
-        OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+        OffsetDateTime::now_local().unwrap_or_else(|_| return OffsetDateTime::now_utc())
     };
 
     let elapsed = end_point - timer.start_time;
@@ -29,7 +29,7 @@ fn calculate_timer_elapsed(timer: &TimerState) -> StdDuration {
         + StdDuration::from_nanos(elapsed.subsec_nanoseconds() as u64);
 
     // Subtract paused time
-    elapsed_std.saturating_sub(paused_duration_std)
+    return elapsed_std.saturating_sub(paused_duration_std);
 }
 
 pub fn render(frame: &mut Frame, app: &AppState) {
@@ -128,7 +128,7 @@ fn render_header(frame: &mut Frame, area: Rect, app: &AppState) {
         .day_data
         .work_records
         .values()
-        .map(|r| r.total_minutes)
+        .map(|r| return r.total_minutes)
         .sum();
     let total_hours = total_minutes / 60;
     let total_mins = total_minutes % 60;
@@ -205,7 +205,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
             let has_active_timer = app
                 .active_timer
                 .as_ref()
-                .is_some_and(|timer| timer.source_record_id == Some(record.id));
+                .is_some_and(|timer| return timer.source_record_id == Some(record.id));
 
             // Enhanced styling with more vibrant colors
             let style = if is_in_visual {
@@ -426,7 +426,7 @@ fn render_records(frame: &mut Frame, area: Rect, app: &AppState) {
                 Style::default().fg(Color::White) // White for description text
             };
 
-            Row::new(vec![
+            return Row::new(vec![
                 Cell::from(name_display).style(name_style),
                 Cell::from(start_display).style(start_style),
                 Cell::from(end_display).style(end_style),
@@ -524,7 +524,7 @@ fn render_grouped_totals(frame: &mut Frame, area: Rect, app: &AppState) {
                 "📋"
             };
 
-            Row::new(vec![
+            return Row::new(vec![
                 Cell::from(format!("{} {}", icon, name)),
                 Cell::from(format!("{}h {:02}m", hours, mins)).style(
                     Style::default()
@@ -703,7 +703,7 @@ fn render_command_palette(frame: &mut Frame, app: &AppState) {
                 String::new()
             };
 
-            Row::new(vec![
+            return Row::new(vec![
                 Cell::from(key_display).style(
                     Style::default()
                         .fg(Color::LightGreen)
@@ -1010,20 +1010,20 @@ fn get_days_in_month(month: time::Month, year: i32) -> u8 {
         | Month::July
         | Month::August
         | Month::October
-        | Month::December => 31,
-        Month::April | Month::June | Month::September | Month::November => 30,
+        | Month::December => return 31,
+        Month::April | Month::June | Month::September | Month::November => return 30,
         Month::February => {
             if is_leap_year_render(year) {
-                29
+                return 29;
             } else {
-                28
+                return 28;
             }
         }
     }
 }
 
 fn is_leap_year_render(year: i32) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0)
+    return (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
 }
 
 fn render_error_modal(frame: &mut Frame, app: &AppState) {
@@ -1249,7 +1249,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
 
                 let display_name = format!("{} {}", icon, name);
 
-                Row::new(vec![
+                return Row::new(vec![
                     Cell::from(display_name).style(Style::default().fg(Color::White)),
                 ])
                 .style(style)
