@@ -53,7 +53,9 @@ pub enum SessionCommands {
 pub fn handle_command(cmd: Commands, storage: Storage) -> Result<()> {
     match cmd {
         Commands::Session { command } => match command {
-            SessionCommands::Start { task, description } => handle_start(task, description, storage),
+            SessionCommands::Start { task, description } => {
+                handle_start(task, description, storage)
+            }
             SessionCommands::Stop => handle_stop(storage),
             SessionCommands::Pause => handle_pause(storage),
             SessionCommands::Resume => handle_resume(storage),

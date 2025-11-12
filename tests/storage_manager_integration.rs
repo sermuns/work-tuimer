@@ -84,7 +84,11 @@ fn test_timer_pause_resume() -> Result<()> {
     let diff = elapsed_after_resume
         .as_millis()
         .abs_diff(elapsed_at_pause.as_millis());
-    assert!(diff < 200, "Elapsed time increased too much during pause: {} ms", diff);
+    assert!(
+        diff < 200,
+        "Elapsed time increased too much during pause: {} ms",
+        diff
+    );
 
     // Stop and verify
     let record = manager.stop_timer()?;
@@ -309,10 +313,7 @@ fn test_multiple_days_isolation() -> Result<()> {
     assert_eq!(today_data.work_records.len(), 1);
     assert_eq!(yesterday_data.work_records.len(), 1);
 
-    assert_eq!(
-        today_data.work_records.get(&1).unwrap().name,
-        "Today Task"
-    );
+    assert_eq!(today_data.work_records.get(&1).unwrap().name, "Today Task");
     assert_eq!(
         yesterday_data.work_records.get(&1).unwrap().name,
         "Yesterday Task"

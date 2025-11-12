@@ -1,5 +1,5 @@
-use crate::ui::AppState;
 use crate::timer::{TimerState, TimerStatus};
+use crate::ui::AppState;
 use ratatui::{
     Frame,
     layout::{Alignment, Constraint, Direction, Layout, Rect},
@@ -13,7 +13,9 @@ use time::OffsetDateTime;
 fn calculate_timer_elapsed(timer: &TimerState) -> StdDuration {
     let end_point = if timer.status == TimerStatus::Paused {
         // If paused, use when it was paused
-        timer.paused_at.unwrap_or_else(|| OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc()))
+        timer.paused_at.unwrap_or_else(|| {
+            OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+        })
     } else {
         // If running, use now
         OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())

@@ -29,6 +29,7 @@ impl StorageManager {
 
     /// Create a new StorageManager with a custom directory (for testing)
     #[doc(hidden)]
+    #[allow(dead_code)]
     pub fn new_with_dir(data_dir: PathBuf) -> Result<Self> {
         Ok(StorageManager {
             storage: Storage::new_with_dir(data_dir)?,
@@ -49,10 +50,10 @@ impl StorageManager {
     /// Returns Some(DayData) if file was modified and reloaded, None if no change
     pub fn check_and_reload(&mut self, date: Date) -> Result<Option<DayData>> {
         let current_modified = self.storage.get_file_modified_time(&date);
-        
+
         // Check if we've tracked this date before
         let is_tracked = self.file_modified_times.contains_key(&date);
-        
+
         if !is_tracked {
             // First time checking this date - load it and start tracking
             let data = self.storage.load(&date)?;
@@ -60,7 +61,7 @@ impl StorageManager {
             Ok(Some(data))
         } else {
             let last_known = self.file_modified_times.get(&date).copied().flatten();
-            
+
             // If modification times differ, reload the file
             if current_modified != last_known {
                 let data = self.storage.load(&date)?;
@@ -73,59 +74,65 @@ impl StorageManager {
     }
 
     /// Add a new work record (transactional: load → add → save → track)
+    #[allow(dead_code)]
     pub fn add_record(&mut self, date: Date, record: WorkRecord) -> Result<()> {
         let mut day_data = self.storage.load(&date)?;
         day_data.add_record(record);
         self.storage.save(&day_data)?;
-        
+
         // Update tracking after successful save
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
-        
+
         Ok(())
     }
 
     /// Update an existing work record (transactional: load → update → save → track)
+    #[allow(dead_code)]
     pub fn update_record(&mut self, date: Date, record: WorkRecord) -> Result<()> {
         let mut day_data = self.storage.load(&date)?;
-        
+
         // Update the record (will replace if ID exists)
         day_data.add_record(record);
-        
+
         self.storage.save(&day_data)?;
-        
+
         // Update tracking after successful save
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
-        
+
         Ok(())
     }
 
     /// Remove a work record by ID (transactional: load → remove → save → track)
     /// Returns the removed record if found
+    #[allow(dead_code)]
     pub fn remove_record(&mut self, date: Date, id: u32) -> Result<WorkRecord> {
         let mut day_data = self.storage.load(&date)?;
-        
-        let record = day_data.work_records.remove(&id)
+
+        let record = day_data
+            .work_records
+            .remove(&id)
             .context(format!("Record with ID {} not found", id))?;
-        
+
         self.storage.save(&day_data)?;
-        
+
         // Update tracking after successful save
         let modified_time = self.storage.get_file_modified_time(&date);
         self.file_modified_times.insert(date, modified_time);
-        
+
         Ok(record)
     }
 
     /// Save day data and update tracking
     pub fn save(&mut self, day_data: &DayData) -> Result<()> {
         self.storage.save(day_data)?;
-        
+
         // Update tracking after successful save
         let modified_time = self.storage.get_file_modified_time(&day_data.date);
-        self.file_modified_times.insert(day_data.date, modified_time);
-        
+        self.file_modified_times
+            .insert(day_data.date, modified_time);
+
         Ok(())
     }
 
@@ -135,6 +142,7 @@ impl StorageManager {
     }
 
     /// Pass-through methods for timer operations (these don't need tracking)
+    #[allow(dead_code)]
     pub fn save_active_timer(&self, timer: &TimerState) -> Result<()> {
         self.storage.save_active_timer(timer)
     }
@@ -143,6 +151,7 @@ impl StorageManager {
         self.storage.load_active_timer()
     }
 
+    #[allow(dead_code)]
     pub fn clear_active_timer(&self) -> Result<()> {
         self.storage.clear_active_timer()
     }
@@ -186,6 +195,7 @@ impl StorageManager {
     }
 
     /// Get elapsed duration for a timer
+    #[allow(dead_code)]
     pub fn get_timer_elapsed(&self, timer: &TimerState) -> std::time::Duration {
         let timer_manager = self.create_timer_manager();
         timer_manager.get_elapsed_duration(timer)
@@ -202,6 +212,7 @@ impl Storage {
 
     /// Create a new Storage with a custom directory (for testing)
     #[doc(hidden)]
+    #[allow(dead_code)]
     pub fn new_with_dir(data_dir: PathBuf) -> Result<Self> {
         fs::create_dir_all(&data_dir).context("Failed to create data directory")?;
         Ok(Storage { data_dir })
@@ -721,7 +732,8 @@ mod tests {
         manager.load_with_tracking(date).unwrap();
 
         // Simulate external change by using a different storage instance
-        let mut external_manager = StorageManager::new_with_dir(temp_dir.path().to_path_buf()).unwrap();
+        let mut external_manager =
+            StorageManager::new_with_dir(temp_dir.path().to_path_buf()).unwrap();
         let record = create_test_record(1, "External Change");
         external_manager.add_record(date, record).unwrap();
 
@@ -974,9 +986,15 @@ mod tests {
         let date = create_test_date();
 
         // Add records one by one
-        manager.add_record(date, create_test_record(1, "Task1")).unwrap();
-        manager.add_record(date, create_test_record(2, "Task2")).unwrap();
-        manager.add_record(date, create_test_record(3, "Task3")).unwrap();
+        manager
+            .add_record(date, create_test_record(1, "Task1"))
+            .unwrap();
+        manager
+            .add_record(date, create_test_record(2, "Task2"))
+            .unwrap();
+        manager
+            .add_record(date, create_test_record(3, "Task3"))
+            .unwrap();
 
         // Verify all are saved
         let day_data = manager.load_with_tracking(date).unwrap();
@@ -990,11 +1008,17 @@ mod tests {
         let date = create_test_date();
 
         // Add initial record
-        manager.add_record(date, create_test_record(1, "Version1")).unwrap();
+        manager
+            .add_record(date, create_test_record(1, "Version1"))
+            .unwrap();
 
         // Update multiple times
-        manager.update_record(date, create_test_record(1, "Version2")).unwrap();
-        manager.update_record(date, create_test_record(1, "Version3")).unwrap();
+        manager
+            .update_record(date, create_test_record(1, "Version2"))
+            .unwrap();
+        manager
+            .update_record(date, create_test_record(1, "Version3"))
+            .unwrap();
 
         // Final version should be loaded
         let day_data = manager.load_with_tracking(date).unwrap();
@@ -1008,9 +1032,15 @@ mod tests {
         let date = create_test_date();
 
         // Add multiple records
-        manager.add_record(date, create_test_record(1, "Task1")).unwrap();
-        manager.add_record(date, create_test_record(2, "Task2")).unwrap();
-        manager.add_record(date, create_test_record(3, "Task3")).unwrap();
+        manager
+            .add_record(date, create_test_record(1, "Task1"))
+            .unwrap();
+        manager
+            .add_record(date, create_test_record(2, "Task2"))
+            .unwrap();
+        manager
+            .add_record(date, create_test_record(3, "Task3"))
+            .unwrap();
 
         // Remove middle one
         let removed = manager.remove_record(date, 2).unwrap();

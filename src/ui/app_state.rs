@@ -949,7 +949,10 @@ impl AppState {
     }
 
     /// Start a new timer with the current selected task
-    pub fn start_timer_for_selected(&mut self, storage: &crate::storage::StorageManager) -> Result<(), String> {
+    pub fn start_timer_for_selected(
+        &mut self,
+        storage: &crate::storage::StorageManager,
+    ) -> Result<(), String> {
         if let Some(record) = self.get_selected_record() {
             match storage.start_timer(
                 record.name.clone(),
@@ -969,7 +972,10 @@ impl AppState {
     }
 
     /// Stop the active timer and convert to work record
-    pub fn stop_active_timer(&mut self, storage: &mut crate::storage::StorageManager) -> Result<(), String> {
+    pub fn stop_active_timer(
+        &mut self,
+        storage: &mut crate::storage::StorageManager,
+    ) -> Result<(), String> {
         if self.active_timer.is_some() {
             match storage.stop_timer() {
                 Ok(_work_record) => {
@@ -992,7 +998,10 @@ impl AppState {
     }
 
     /// Pause the active timer
-    pub fn pause_active_timer(&mut self, storage: &crate::storage::StorageManager) -> Result<(), String> {
+    pub fn pause_active_timer(
+        &mut self,
+        storage: &crate::storage::StorageManager,
+    ) -> Result<(), String> {
         if self.active_timer.is_some() {
             match storage.pause_timer() {
                 Ok(paused_timer) => {
@@ -1007,7 +1016,10 @@ impl AppState {
     }
 
     /// Resume a paused timer
-    pub fn resume_active_timer(&mut self, storage: &crate::storage::StorageManager) -> Result<(), String> {
+    pub fn resume_active_timer(
+        &mut self,
+        storage: &crate::storage::StorageManager,
+    ) -> Result<(), String> {
         if self.active_timer.is_some() {
             match storage.resume_timer() {
                 Ok(resumed_timer) => {
@@ -1028,23 +1040,26 @@ impl AppState {
 
     /// Check if the data file has been modified externally and reload if needed
     /// Returns true if the file was reloaded
-    pub fn check_and_reload_if_modified(&mut self, storage: &mut crate::storage::StorageManager) -> bool {
+    pub fn check_and_reload_if_modified(
+        &mut self,
+        storage: &mut crate::storage::StorageManager,
+    ) -> bool {
         let mut changed = false;
-        
+
         // Check if day data file has been modified
         if let Ok(Some(new_data)) = storage.check_and_reload(self.current_date) {
             self.day_data = new_data;
             self.last_file_modified = storage.get_last_modified(&self.current_date);
-            
+
             // Adjust selected_index if it's now out of bounds
             let record_count = self.day_data.work_records.len();
             if self.selected_index >= record_count && record_count > 0 {
                 self.selected_index = record_count - 1;
             }
-            
+
             changed = true;
         }
-        
+
         // Check if active timer has been modified externally (e.g., started/stopped from CLI)
         if let Ok(Some(timer)) = storage.load_active_timer() {
             // Timer exists - update if different from current state
@@ -1057,7 +1072,7 @@ impl AppState {
             self.active_timer = None;
             changed = true;
         }
-        
+
         changed
     }
 }

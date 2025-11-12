@@ -256,7 +256,9 @@ impl TimerManager {
     pub fn get_elapsed_duration(&self, timer: &TimerState) -> StdDuration {
         let end_point = if timer.status == TimerStatus::Paused {
             // If paused, use when it was paused
-            timer.paused_at.unwrap_or_else(|| OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc()))
+            timer.paused_at.unwrap_or_else(|| {
+                OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
+            })
         } else {
             // If running, use now
             OffsetDateTime::now_local().unwrap_or_else(|_| OffsetDateTime::now_utc())
