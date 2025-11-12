@@ -26,15 +26,11 @@ Start a timer when you begin work, stop it when done. End time is automatically 
 
 ### Starting a Session
 
-Two ways to start a session:
+In the TUI, you must select an existing work record, then press `S` to start a session:
+- Updates that record's end time when stopped
+- Use to extend existing entries
 
-1. **From an existing work record**: Select a record and press `S`
-   - Updates that record's end time when stopped
-   - Use to extend existing entries
-
-2. **New session**: Press `S` when no record is selected
-   - Creates a new work record when stopped
-   - Start time is set to current time
+To create a new task with a session, use the CLI `session start` command.
 
 ### Session Controls
 
@@ -68,6 +64,8 @@ Control sessions from the command line without opening the TUI.
 
 ### Starting a Session
 
+The CLI can create new tasks with sessions:
+
 ```bash
 # Start a basic session
 work-tuimer session start "My Task"
@@ -75,6 +73,8 @@ work-tuimer session start "My Task"
 # Start with a description
 work-tuimer session start "Bug Fix" -d "Fixing authentication issue"
 ```
+
+This creates a new work record and starts tracking immediately.
 
 Output:
 ```
