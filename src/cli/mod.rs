@@ -16,7 +16,17 @@ pub struct Cli {
 /// Available CLI commands
 #[derive(Subcommand)]
 pub enum Commands {
-    /// Start a new timer
+    /// Manage timer sessions (start/stop/pause/resume/status)
+    Session {
+        #[command(subcommand)]
+        command: SessionCommands,
+    },
+}
+
+/// Session management commands
+#[derive(Subcommand)]
+pub enum SessionCommands {
+    /// Start a new timer session
     Start {
         /// Task name
         task: String,
@@ -26,27 +36,29 @@ pub enum Commands {
         description: Option<String>,
     },
 
-    /// Stop the running timer
+    /// Stop the running timer session
     Stop,
 
-    /// Pause the running timer
+    /// Pause the running timer session
     Pause,
 
-    /// Resume the paused timer
+    /// Resume the paused timer session
     Resume,
 
-    /// Show status of running timer
+    /// Show status of running timer session
     Status,
 }
 
 /// Handle CLI command execution
 pub fn handle_command(cmd: Commands, storage: Storage) -> Result<()> {
     match cmd {
-        Commands::Start { task, description } => handle_start(task, description, storage),
-        Commands::Stop => handle_stop(storage),
-        Commands::Pause => handle_pause(storage),
-        Commands::Resume => handle_resume(storage),
-        Commands::Status => handle_status(storage),
+        Commands::Session { command } => match command {
+            SessionCommands::Start { task, description } => handle_start(task, description, storage),
+            SessionCommands::Stop => handle_stop(storage),
+            SessionCommands::Pause => handle_pause(storage),
+            SessionCommands::Resume => handle_resume(storage),
+            SessionCommands::Status => handle_status(storage),
+        },
     }
 }
 

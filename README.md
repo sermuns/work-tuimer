@@ -158,20 +158,23 @@ WorkTimer includes a built-in timer for real-time time tracking. Start a timer f
 You can also control timers from the command line:
 
 ```bash
-# Start a timer
-work-tuimer timer start "My Task"
+# Start a timer session
+work-tuimer session start "My Task"
 
-# Check timer status
-work-tuimer timer status
+# Start with description
+work-tuimer session start "My Task" -d "Optional description"
 
-# Pause the timer
-work-tuimer timer pause
+# Stop the timer session and save
+work-tuimer session stop
 
-# Resume a paused timer
-work-tuimer timer resume
+# Pause the timer session
+work-tuimer session pause
 
-# Stop the timer and save
-work-tuimer timer stop
+# Resume a paused timer session
+work-tuimer session resume
+
+# Check timer session status
+work-tuimer session status
 ```
 
 ## Issue Tracker Integration (Optional)
