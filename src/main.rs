@@ -206,6 +206,8 @@ fn handle_key_event(app: &mut AppState, key: KeyEvent, storage: &mut storage::St
             KeyCode::Tab => app.next_field(),
             KeyCode::Enter => {
                 let _ = app.save_edit();
+                let _ = storage.save(&app.day_data);
+                app.last_file_modified = storage.get_last_modified(&app.current_date);
             }
             KeyCode::Backspace => app.handle_backspace(),
             KeyCode::Char(c) => app.handle_char_input(c),
