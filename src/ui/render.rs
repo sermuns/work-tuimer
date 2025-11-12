@@ -1116,7 +1116,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
     frame.render_widget(Clear, modal_area);
 
     // Add a background block for the entire modal
-    let bg_block = Block::default().style(Style::default().bg(app.theme.row_alternate_bg));
+    let bg_block = Block::default().style(Style::default().bg(app.theme.selected_inactive_bg));
     frame.render_widget(bg_block, modal_area);
 
     // Split modal into header, input, and list
@@ -1150,7 +1150,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                         .fg(app.theme.info)
                         .add_modifier(Modifier::BOLD),
                 )
-                .style(Style::default().bg(app.theme.edit_bg)),
+                .style(Style::default().bg(app.theme.selected_inactive_bg)),
         );
 
     frame.render_widget(header, chunks[0]);
@@ -1177,7 +1177,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                 .border_style(Style::default().fg(app.theme.warning))
                 .title("Filter / New Task")
                 .title_style(Style::default().fg(app.theme.warning))
-                .style(Style::default().bg(app.theme.edit_bg))
+                .style(Style::default().bg(app.theme.selected_inactive_bg))
                 .padding(ratatui::widgets::Padding::horizontal(1)),
         );
 
@@ -1193,7 +1193,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                     .borders(Borders::ALL)
                     .border_type(BorderType::Rounded)
                     .border_style(Style::default().fg(app.theme.info))
-                    .style(Style::default().bg(app.theme.row_alternate_bg)),
+                    .style(Style::default().bg(app.theme.selected_inactive_bg)),
             );
         frame.render_widget(empty_msg, chunks[2]);
     } else if filtered_tasks.is_empty() && !app.input_buffer.is_empty() {
@@ -1232,7 +1232,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                         .fg(app.theme.primary_text)
                         .add_modifier(Modifier::BOLD)
                 } else {
-                    Style::default().bg(app.theme.row_alternate_bg)
+                    Style::default().bg(app.theme.selected_inactive_bg)
                 };
 
                 // Add icon based on task type
@@ -1274,7 +1274,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                         .fg(app.theme.info)
                         .add_modifier(Modifier::BOLD),
                 )
-                .style(Style::default().bg(app.theme.row_alternate_bg)),
+                .style(Style::default().bg(app.theme.selected_inactive_bg)),
         );
 
         frame.render_widget(task_table, chunks[2]);
