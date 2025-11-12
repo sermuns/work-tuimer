@@ -12,23 +12,6 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Current Sprint
 
-### Chore: Code Style Standards (2025-11-12)
-- [x] Create branch chore/explicit-return-statements
-- [x] Update AGENTS.md to require explicit `return` keyword
-- [x] Add clippy::implicit_return lint to Cargo.toml
-- [x] Verify lint configuration works (152 warnings found)
-- [x] Fix all implicit return warnings (40+ locations across 9 files)
-- [x] Verify all 164 tests passing and clippy clean
-- [x] Commit changes to branch
-- [ ] Create pull request for code style enforcement
-- **Context**: Updated code style guidelines to require explicit `return` keyword for all function returns. Added Clippy lint `clippy::implicit_return = "warn"` to Cargo.toml to enforce this standard going forward. Fixed all 40+ implicit return warnings across the codebase.
-- **Branch**: chore/explicit-return-statements
-- **Files Modified**: 13 files total - AGENTS.md, Cargo.toml, and 11 source files (cli, config, integrations, main, models/, storage, timer, ui/)
-- **Testing**: All 164 tests passing (153 unit + 11 integration), clippy clean with `-D warnings`
-- **Commits**:
-  - 2e973a0 - "Add explicit return statement requirement to code standards and configure Clippy lint"
-  - f60a894 - "Fix all implicit return warnings across codebase"
-
 ### High Priority Features (Quick Wins)
 
 #### Daily Summary
@@ -137,6 +120,24 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 ---
 
 ## Completed Tasks
+
+### Chore: Enforce Explicit Return Statements - PR #31 (2025-11-12)
+- [x] Create branch chore/explicit-return-statements
+- [x] Update AGENTS.md to require explicit `return` keyword
+- [x] Add clippy::implicit_return lint to Cargo.toml
+- [x] Fix all implicit return warnings (40+ locations across 12 files)
+- [x] Verify all 164 tests passing and clippy clean
+- [x] Create pull request
+- **Context**: Enforced explicit `return` keyword requirement for all function returns, closures, and match arms across the entire codebase. This improves code readability by making return points explicit, especially in complex functions.
+- **Solution**: Added `clippy::implicit_return = "warn"` lint to Cargo.toml and fixed all existing violations. Changed closures from `|x| expression` to `|x| return expression`, match arms from `Pattern => value` to `Pattern => return value`, and function returns to use explicit `return` keyword.
+- **Testing**: All 164 tests pass (153 unit + 11 integration), clippy clean with `-D warnings`
+- **Files Modified**: 15 files total - AGENTS.md, Cargo.toml, TASKS.md, and 12 source files
+- **Branch**: chore/explicit-return-statements
+- **PR**: https://github.com/Kamyil/work-tuimer/pull/31
+- **Commits**: 
+  - 2e973a0 - "Add explicit return statement requirement to code standards and configure Clippy lint"
+  - f60a894 - "Fix all implicit return warnings across codebase"
+  - 2049825 - "Update TASKS.md with code style enforcement completion"
 
 ### Feature: Add --version Command + Bump to v0.3.0 - Issue #18 (2025-11-12)
 - [x] Create new branch feature/add-version-command
