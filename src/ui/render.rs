@@ -1216,7 +1216,7 @@ fn render_task_picker(frame: &mut Frame, app: &AppState) {
                                 .fg(app.theme.success)
                                 .add_modifier(Modifier::BOLD),
                         )
-                        .style(Style::default().bg(app.theme.timer_active_bg)),
+                        .style(Style::default().bg(app.theme.selected_inactive_bg)),
                 );
         frame.render_widget(new_task_msg, chunks[2]);
     } else {
