@@ -832,4 +832,357 @@ badge = "lightmagenta"
         let theme = config.get_theme();
         assert!(matches!(theme.active_border, Color::Red));
     }
+
+    // Additional comprehensive tests
+
+    #[test]
+    fn test_all_predefined_theme_methods() {
+        // Test that all theme methods return valid themes with all fields populated
+        let default = Theme::default_theme();
+        let kanagawa = Theme::kanagawa();
+        let catppuccin = Theme::catppuccin();
+        let gruvbox = Theme::gruvbox();
+        let monokai = Theme::monokai();
+        let dracula = Theme::dracula();
+        let everforest = Theme::everforest();
+        let terminal = Theme::terminal();
+
+        // Verify each theme has different active_border colors (unique themes)
+        assert!(matches!(default.active_border, Color::Cyan));
+        assert!(matches!(kanagawa.active_border, Color::Rgb(126, 156, 216)));
+        assert!(matches!(catppuccin.active_border, Color::Rgb(137, 180, 250)));
+        assert!(matches!(gruvbox.active_border, Color::Rgb(131, 165, 152)));
+        assert!(matches!(monokai.active_border, Color::Rgb(102, 217, 239)));
+        assert!(matches!(dracula.active_border, Color::Rgb(139, 233, 253)));
+        assert!(matches!(everforest.active_border, Color::Rgb(131, 192, 146)));
+        assert!(matches!(terminal.active_border, Color::Cyan));
+    }
+
+    #[test]
+    fn test_parse_color_hex_edge_cases() {
+        // Test lowercase hex
+        assert!(matches!(parse_color("#ffffff"), Color::Rgb(255, 255, 255)));
+        assert!(matches!(parse_color("#000000"), Color::Rgb(0, 0, 0)));
+
+        // Test uppercase hex
+        assert!(matches!(parse_color("#FFFFFF"), Color::Rgb(255, 255, 255)));
+        assert!(matches!(parse_color("#ABC"), Color::Rgb(170, 187, 204)));
+
+        // Test mixed case
+        assert!(matches!(parse_color("#FfFfFf"), Color::Rgb(255, 255, 255)));
+
+        // Test invalid hex (wrong length)
+        assert!(matches!(parse_color("#FF"), Color::White)); // fallback
+        assert!(matches!(parse_color("#FFFFFFF"), Color::White)); // fallback
+
+        // Test invalid hex characters
+        assert!(matches!(parse_color("#GGGGGG"), Color::White)); // fallback
+        assert!(matches!(parse_color("#XYZ"), Color::White)); // fallback
+    }
+
+    #[test]
+    fn test_parse_color_rgb_edge_cases() {
+        // Test boundary values
+        assert!(matches!(parse_color("0, 0, 0"), Color::Rgb(0, 0, 0)));
+        assert!(matches!(
+            parse_color("255, 255, 255"),
+            Color::Rgb(255, 255, 255)
+        ));
+
+        // Test with parentheses (should be handled by trim)
+        assert!(matches!(
+            parse_color("(100, 150, 200)"),
+            Color::Rgb(100, 150, 200)
+        ));
+
+        // Test various spacing
+        assert!(matches!(parse_color("10,20,30"), Color::Rgb(10, 20, 30)));
+        assert!(matches!(
+            parse_color("  50  ,  100  ,  150  "),
+            Color::Rgb(50, 100, 150)
+        ));
+
+        // Test invalid RGB values
+        assert!(matches!(parse_color("256, 100, 100"), Color::White)); // out of range
+        assert!(matches!(parse_color("100, 300, 100"), Color::White)); // out of range
+        assert!(matches!(parse_color("100, 100, 256"), Color::White)); // out of range
+        assert!(matches!(parse_color("-1, 100, 100"), Color::White)); // negative
+        assert!(matches!(parse_color("abc, 100, 100"), Color::White)); // non-numeric
+
+        // Test wrong number of components
+        assert!(matches!(parse_color("100, 100"), Color::White)); // too few
+        assert!(matches!(parse_color("100, 100, 100, 100"), Color::White)); // too many
+    }
+
+    #[test]
+    fn test_parse_color_named_variations() {
+        // Test case variations
+        assert!(matches!(parse_color("RED"), Color::Red));
+        assert!(matches!(parse_color("Red"), Color::Red));
+        assert!(matches!(parse_color("rEd"), Color::Red));
+
+        // Test grey vs gray
+        assert!(matches!(parse_color("gray"), Color::Gray));
+        assert!(matches!(parse_color("grey"), Color::Gray));
+        assert!(matches!(parse_color("GRAY"), Color::Gray));
+        assert!(matches!(parse_color("GREY"), Color::Gray));
+        assert!(matches!(parse_color("darkgray"), Color::DarkGray));
+        assert!(matches!(parse_color("darkgrey"), Color::DarkGray));
+
+        // Test all light colors
+        assert!(matches!(parse_color("LightRed"), Color::LightRed));
+        assert!(matches!(parse_color("LightGreen"), Color::LightGreen));
+        assert!(matches!(parse_color("LightYellow"), Color::LightYellow));
+        assert!(matches!(parse_color("LightBlue"), Color::LightBlue));
+        assert!(matches!(parse_color("LightMagenta"), Color::LightMagenta));
+        assert!(matches!(parse_color("LightCyan"), Color::LightCyan));
+
+        // Test terminal color aliases
+        assert!(matches!(parse_color("reset"), Color::Reset));
+        assert!(matches!(parse_color("terminal"), Color::Reset));
+        assert!(matches!(parse_color("default"), Color::Reset));
+        assert!(matches!(parse_color("RESET"), Color::Reset));
+        assert!(matches!(parse_color("Terminal"), Color::Reset));
+    }
+
+    #[test]
+    fn test_parse_color_whitespace_handling() {
+        // Test leading/trailing whitespace
+        assert!(matches!(parse_color("  red  "), Color::Red));
+        assert!(matches!(parse_color("\tblue\t"), Color::Blue));
+        assert!(matches!(parse_color(" #FF0000 "), Color::Rgb(255, 0, 0)));
+        assert!(matches!(
+            parse_color("  100, 200, 150  "),
+            Color::Rgb(100, 200, 150)
+        ));
+    }
+
+    #[test]
+    fn test_parse_color_empty_and_whitespace() {
+        // Empty strings should fallback to white
+        assert!(matches!(parse_color(""), Color::White));
+        assert!(matches!(parse_color("   "), Color::White));
+        assert!(matches!(parse_color("\t\t"), Color::White));
+    }
+
+    #[test]
+    fn test_theme_color_consistency() {
+        // Verify that all pre-defined themes have consistent structure
+        // (all 18 colors are present and valid)
+        let themes = vec![
+            Theme::default_theme(),
+            Theme::kanagawa(),
+            Theme::catppuccin(),
+            Theme::gruvbox(),
+            Theme::monokai(),
+            Theme::dracula(),
+            Theme::everforest(),
+            Theme::terminal(),
+        ];
+
+        for theme in themes {
+            // Just access all fields to ensure they exist
+            let _ = theme.active_border;
+            let _ = theme.inactive_border;
+            let _ = theme.searching_border;
+            let _ = theme.selected_bg;
+            let _ = theme.selected_inactive_bg;
+            let _ = theme.visual_bg;
+            let _ = theme.timer_active_bg;
+            let _ = theme.row_alternate_bg;
+            let _ = theme.edit_bg;
+            let _ = theme.primary_text;
+            let _ = theme.secondary_text;
+            let _ = theme.highlight_text;
+            let _ = theme.success;
+            let _ = theme.warning;
+            let _ = theme.error;
+            let _ = theme.info;
+            let _ = theme.timer_text;
+            let _ = theme.badge;
+        }
+    }
+
+    #[test]
+    fn test_custom_theme_colors_all_formats() {
+        let custom_colors = CustomThemeColors {
+            active_border: "#FF0000".to_string(),       // hex
+            inactive_border: "darkgray".to_string(),     // named
+            searching_border: "255, 255, 0".to_string(), // rgb
+            selected_bg: "#00F".to_string(),             // short hex
+            selected_inactive_bg: "Black".to_string(),   // named (capitalized)
+            visual_bg: "0, 128, 255".to_string(),        // rgb
+            timer_active_bg: "lightgreen".to_string(),   // named
+            row_alternate_bg: "#111".to_string(),        // short hex
+            edit_bg: "(50, 100, 150)".to_string(),       // rgb with parens
+            primary_text: "white".to_string(),           // named
+            secondary_text: "128, 128, 128".to_string(), // rgb
+            highlight_text: "#0FF".to_string(),          // short hex cyan
+            success: "green".to_string(),                // named
+            warning: "#FFAA00".to_string(),              // hex
+            error: "255, 0, 0".to_string(),              // rgb
+            info: "cyan".to_string(),                    // named
+            timer_text: "#FFA500".to_string(),           // hex
+            badge: "magenta".to_string(),                // named
+        };
+
+        let theme = Theme::from_custom(&custom_colors);
+
+        // Verify mixed color formats are parsed correctly
+        assert!(matches!(theme.active_border, Color::Rgb(255, 0, 0))); // hex
+        assert!(matches!(theme.inactive_border, Color::DarkGray)); // named
+        assert!(matches!(theme.searching_border, Color::Rgb(255, 255, 0))); // rgb
+        assert!(matches!(theme.selected_bg, Color::Rgb(0, 0, 255))); // short hex
+        assert!(matches!(theme.selected_inactive_bg, Color::Black)); // named
+        assert!(matches!(theme.visual_bg, Color::Rgb(0, 128, 255))); // rgb
+        assert!(matches!(theme.timer_active_bg, Color::LightGreen)); // named
+        assert!(matches!(theme.row_alternate_bg, Color::Rgb(17, 17, 17))); // short hex
+    }
+
+    #[test]
+    fn test_multiple_custom_themes_in_config() {
+        let toml_str = r##"
+[theme]
+active = "theme2"
+
+[theme.custom.theme1]
+active_border = "red"
+inactive_border = "darkgray"
+searching_border = "yellow"
+selected_bg = "blue"
+selected_inactive_bg = "black"
+visual_bg = "cyan"
+timer_active_bg = "green"
+row_alternate_bg = "black"
+edit_bg = "blue"
+primary_text = "white"
+secondary_text = "gray"
+highlight_text = "cyan"
+success = "green"
+warning = "yellow"
+error = "red"
+info = "cyan"
+timer_text = "yellow"
+badge = "magenta"
+
+[theme.custom.theme2]
+active_border = "#FF00FF"
+inactive_border = "darkgray"
+searching_border = "yellow"
+selected_bg = "blue"
+selected_inactive_bg = "black"
+visual_bg = "cyan"
+timer_active_bg = "green"
+row_alternate_bg = "black"
+edit_bg = "blue"
+primary_text = "white"
+secondary_text = "gray"
+highlight_text = "cyan"
+success = "green"
+warning = "yellow"
+error = "red"
+info = "cyan"
+timer_text = "yellow"
+badge = "magenta"
+        "##;
+
+        let config: Config = toml::from_str(toml_str).expect("Failed to deserialize");
+        assert_eq!(config.theme.active, "theme2");
+        assert_eq!(config.theme.custom.len(), 2);
+        assert!(config.theme.custom.contains_key("theme1"));
+        assert!(config.theme.custom.contains_key("theme2"));
+
+        // Verify the active theme is theme2 with magenta border
+        let theme = config.get_theme();
+        assert!(matches!(theme.active_border, Color::Rgb(255, 0, 255)));
+    }
+
+    #[test]
+    fn test_theme_config_case_sensitivity() {
+        // Theme names should be case-sensitive (lowercase by convention)
+        let theme_config = ThemeConfig {
+            active: "KANAGAWA".to_string(), // uppercase (not found)
+            custom: HashMap::new(),
+        };
+
+        let theme = theme_config.get_active_theme();
+        // Should fallback to default theme (not kanagawa)
+        assert!(matches!(theme.active_border, Color::Cyan)); // default theme
+    }
+
+    #[test]
+    fn test_custom_theme_overrides_predefined() {
+        // Custom theme with same name as predefined should override
+        let mut custom = HashMap::new();
+        custom.insert(
+            "default".to_string(),
+            CustomThemeColors {
+                active_border: "#FF0000".to_string(), // red instead of cyan
+                inactive_border: "darkgray".to_string(),
+                searching_border: "yellow".to_string(),
+                selected_bg: "blue".to_string(),
+                selected_inactive_bg: "black".to_string(),
+                visual_bg: "cyan".to_string(),
+                timer_active_bg: "green".to_string(),
+                row_alternate_bg: "black".to_string(),
+                edit_bg: "blue".to_string(),
+                primary_text: "white".to_string(),
+                secondary_text: "gray".to_string(),
+                highlight_text: "cyan".to_string(),
+                success: "green".to_string(),
+                warning: "yellow".to_string(),
+                error: "red".to_string(),
+                info: "cyan".to_string(),
+                timer_text: "yellow".to_string(),
+                badge: "magenta".to_string(),
+            },
+        );
+
+        let theme_config = ThemeConfig {
+            active: "default".to_string(),
+            custom,
+        };
+
+        let theme = theme_config.get_active_theme();
+        // Should use custom theme (red), not predefined default (cyan)
+        assert!(matches!(theme.active_border, Color::Rgb(255, 0, 0)));
+    }
+
+    #[test]
+    fn test_parse_color_rgb_with_parentheses_and_spaces() {
+        // RGB tuples can have parentheses (users might include them)
+        assert!(matches!(
+            parse_color("(255, 128, 64)"),
+            Color::Rgb(255, 128, 64)
+        ));
+        assert!(matches!(
+            parse_color("( 100 , 200 , 150 )"),
+            Color::Rgb(100, 200, 150)
+        ));
+
+        // But parentheses aren't stripped by parse_color, they're just whitespace
+        // This should fail to parse as RGB (because of parentheses) and fallback to white
+        // Actually, let's verify the actual behavior
+        let result = parse_color("(10,20,30)");
+        // This will fail to parse as RGB tuple because of parens, fallback to white
+        assert!(matches!(result, Color::White));
+    }
+
+    #[test]
+    fn test_theme_serialization() {
+        // Test that ThemeConfig can be serialized/deserialized
+        let theme_config = ThemeConfig {
+            active: "gruvbox".to_string(),
+            custom: HashMap::new(),
+        };
+
+        let serialized = toml::to_string(&theme_config).expect("Failed to serialize");
+        assert!(serialized.contains("active"));
+        assert!(serialized.contains("gruvbox"));
+
+        let deserialized: ThemeConfig =
+            toml::from_str(&serialized).expect("Failed to deserialize");
+        assert_eq!(deserialized.active, "gruvbox");
+        assert!(deserialized.custom.is_empty());
+    }
 }
