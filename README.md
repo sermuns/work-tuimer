@@ -131,51 +131,42 @@ Press `c` on the Name field to open the task picker:
 | `Enter` | Jump to selected date |
 | `Esc` | Close calendar view |
 
-## Timer Tracking
+## Timer Sessions
 
-WorkTimer includes a built-in timer for real-time time tracking. Start a timer for any task and it will automatically update the end time when stopped.
+WorkTimer includes a built-in timer system for real-time time tracking. Sessions allow you to track time as you work, with automatic updates, pause/resume support, and seamless CLI/TUI integration.
 
-### How to Use
+### Quick Start
 
-1. **Start Timer**: Select a work record and press `S` to start tracking time
-2. **Active Timer Display**: When a timer is running, you'll see a status bar at the top showing:
-   - Task name
-   - Elapsed time (H:MM:SS format)
-   - Timer status (Running/Paused)
-3. **Pause/Resume**: Press `P` to pause or resume the active timer
-4. **Stop Timer**: Press `S` again to stop and save the time to the record
+**In the TUI:**
+1. Select a work record and press `S` to start a session
+2. See the timer status bar at the top with elapsed time
+3. Press `P` to pause/resume, `S` to stop
 
-### Timer Features
-
-- **Automatic time updates**: End time is set to when you stop the timer
-- **Pause support**: Accumulates only active time, paused duration is tracked separately
-- **Cross-session persistence**: Timers survive app restarts - resume where you left off
-- **Cross-date support**: Start a timer on a record from any day (past/future) and it updates correctly
-- **Visual indicators**: Active timer records are highlighted with ⏱ icon
-
-### CLI Timer Commands
-
-You can also control timers from the command line:
-
+**From the CLI:**
 ```bash
-# Start a timer session
+# Start a session
 work-tuimer session start "My Task"
 
-# Start with description
-work-tuimer session start "My Task" -d "Optional description"
+# Check status
+work-tuimer session status
 
-# Stop the timer session and save
-work-tuimer session stop
-
-# Pause the timer session
+# Pause/resume
 work-tuimer session pause
-
-# Resume a paused timer session
 work-tuimer session resume
 
-# Check timer session status
-work-tuimer session status
+# Stop and save
+work-tuimer session stop
 ```
+
+### Key Features
+
+- **Automatic time updates**: End time is set when you stop the session
+- **Pause support**: Only active time is counted, paused duration tracked separately
+- **Cross-session persistence**: Sessions survive app restarts
+- **CLI + TUI integration**: Start in CLI, stop in TUI, or vice versa
+- **Visual indicators**: Active sessions highlighted with ⏱ icon
+
+**📖 For detailed documentation, workflows, and troubleshooting, see [Timer Sessions Guide](docs/SESSIONS.md)**
 
 ## Issue Tracker Integration (Optional)
 
