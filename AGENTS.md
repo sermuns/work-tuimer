@@ -44,6 +44,7 @@ When working on any feature or bug fix:
 - **Imports**: Group by std → external crates → internal modules, separated by blank lines
 - **Types**: Prefer explicit types on public APIs; use `pub` fields for simple data structs
 - **Naming**: `snake_case` for variables/functions, `PascalCase` for types/enums, `SCREAMING_SNAKE_CASE` for constants
+- **Returns**: Always use explicit `return` keyword for function return values (no implicit returns)
 - **String Handling**: Use `.to_string()` for owned strings, `&str` for borrowed; trim user input
 - **Time Format**: Use `time` crate (`TimePoint` format: `HH:MM`, validates 0-23h, 0-59m)
 - **Serialization**: Use `serde` with `Serialize`/`Deserialize` derives; pretty-print JSON with `serde_json::to_string_pretty`

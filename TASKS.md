@@ -12,6 +12,16 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Current Sprint
 
+### Chore: Code Style Standards (2025-11-12)
+- [x] Create branch chore/explicit-return-statements
+- [x] Update AGENTS.md to require explicit `return` keyword
+- [x] Add clippy::implicit_return lint to Cargo.toml
+- [x] Verify lint configuration works (152 warnings found)
+- [x] Update TASKS.md with completed work
+- **Context**: Updated code style guidelines to require explicit `return` keyword for all function returns. Added Clippy lint `clippy::implicit_return = "warn"` to Cargo.toml to enforce this standard going forward. Currently 152 locations need to be fixed in the existing codebase.
+- **Branch**: chore/explicit-return-statements
+- **Files Modified**: AGENTS.md (code style documentation), Cargo.toml (lint configuration)
+
 ### High Priority Features (Quick Wins)
 
 #### Daily Summary
