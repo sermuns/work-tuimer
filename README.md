@@ -23,7 +23,27 @@ Built with Rust and ratatui for efficient time management.
 
 ## Installation
 
-### FreeBSD
+### Package Managers
+
+#### Homebrew (macOS/Linux)
+
+```sh
+brew install work-tuimer
+```
+
+#### Arch Linux (AUR)
+
+```sh
+# Using yay
+yay -S work-tuimer
+
+# Or manually
+git clone https://aur.archlinux.org/work-tuimer.git
+cd work-tuimer
+makepkg -si
+```
+
+#### FreeBSD
 
 ```sh
 pkg install work-tuimer

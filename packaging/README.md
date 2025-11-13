@@ -1,0 +1,109 @@
+# Packaging Guide for work-tuimer
+
+This directory contains packaging files for various package managers.
+
+## Homebrew (macOS/Linux)
+
+### Testing Locally
+
+1. Install the formula locally:
+   ```bash
+   brew install --build-from-source packaging/homebrew/work-tuimer.rb
+   ```
+
+2. Test the installation:
+   ```bash
+   work-tuimer --version
+   work-tuimer --help
+   ```
+
+3. Audit the formula:
+   ```bash
+   brew audit --new --formula packaging/homebrew/work-tuimer.rb
+   ```
+
+### Submitting to homebrew-core
+
+1. Fork the [homebrew-core](https://github.com/Homebrew/homebrew-core) repository
+
+2. Copy the formula to the correct location:
+   ```bash
+   cp packaging/homebrew/work-tuimer.rb /path/to/homebrew-core/Formula/w/work-tuimer.rb
+   ```
+
+3. Create a branch and commit:
+   ```bash
+   cd /path/to/homebrew-core
+   git checkout -b work-tuimer-0.3.0
+   git add Formula/w/work-tuimer.rb
+   git commit -m "work-tuimer 0.3.0 (new formula)"
+   ```
+
+4. Run tests:
+   ```bash
+   brew test work-tuimer
+   brew audit --strict --online work-tuimer
+   ```
+
+5. Push and open a PR to homebrew-core
+
+## AUR (Arch Linux)
+
+### Testing Locally
+
+1. Install required tools:
+   ```bash
+   sudo pacman -S base-devel
+   ```
+
+2. Build and test:
+   ```bash
+   cd packaging/aur
+   makepkg -si
+   ```
+
+3. Generate checksum:
+   ```bash
+   makepkg -g >> PKGBUILD
+   # Then manually edit PKGBUILD to replace SKIP with the generated b2sum
+   ```
+
+4. Test the package:
+   ```bash
+   work-tuimer --version
+   ```
+
+### Publishing to AUR
+
+1. Create an AUR account at https://aur.archlinux.org/
+
+2. Set up SSH keys for AUR
+
+3. Clone the AUR repository:
+   ```bash
+   git clone ssh://aur@aur.archlinux.org/work-tuimer.git aur-repo
+   ```
+
+4. Copy files and commit:
+   ```bash
+   cp packaging/aur/{PKGBUILD,.SRCINFO} aur-repo/
+   cd aur-repo
+   makepkg --printsrcinfo > .SRCINFO
+   git add PKGBUILD .SRCINFO
+   git commit -m "Initial release: work-tuimer 0.3.0"
+   git push
+   ```
+
+## FreeBSD
+
+FreeBSD port already exists and is maintained upstream:
+```bash
+pkg install work-tuimer
+```
+
+## Notes
+
+- Always test locally before submitting
+- Ensure all checksums are correct
+- Follow each platform's contribution guidelines
+- Update version numbers in all files when releasing new versions
