@@ -12,6 +12,22 @@ This file tracks active development tasks for the WorkTimer project. Tasks are m
 
 ## Current Sprint
 
+### Bug Fix: Save on All Data Modifications - Issue #36 (2025-11-14)
+- [x] Investigate data loss after system crash
+- [x] Identify actions that modify data but don't save to disk
+- [x] Add save calls after `set_current_time_on_field()` (t key)
+- [x] Add save calls after `delete_visual_selection()` (d in Visual mode)
+- [x] Add save calls after `select_task_from_picker()` (c → Enter)
+- [x] Add save calls in command palette SetNow action
+- [x] Run full test suite to ensure no regressions (191 tests passing)
+- **Context**: User reported data loss after system crash. Investigation revealed three user actions that modify in-memory data but don't trigger disk saves:
+  1. Setting current time on field (`t` key) - modifies start/end times
+  2. Deleting visual selection (`d` in Visual mode) - deletes multiple records
+  3. Changing task name via task picker (`c` → Enter) - modifies task name
+- **Root Cause**: These actions save snapshots for undo/redo but don't call `storage.save()`, creating illusion of saving
+- **Impact**: Users could work all day using `t` key to set timestamps, crash, and lose everything
+- **Solution**: Add consistent `storage.save()` + `last_file_modified` update pattern to all data-modifying actions
+
 ### High Priority Features (Quick Wins)
 
 #### Daily Summary
