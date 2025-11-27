@@ -68,7 +68,7 @@ release version:
     
     # Run tests to ensure everything works
     echo "Running tests..."
-    cargo test --quiet
+    nix-shell --run "cargo test --quiet"
     echo "✓ Tests passed"
     
     # Commit version bump
@@ -89,7 +89,7 @@ release version:
     
     # Publish to crates.io
     echo "Publishing to crates.io..."
-    cargo publish
+    nix-shell --run "cargo publish"
     echo "✓ Published to crates.io"
     
     echo ""
